@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.inventorycontroll.common.shopService.ShopService
 import com.example.inventorycontroll.communication.GoodsApiService
 import com.example.inventorycontroll.communication.model.BarcodeModelApi
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
@@ -20,25 +21,28 @@ import javax.inject.Inject
 @HiltViewModel
 class SynchronizationViewModel @Inject constructor(
     private val dao: GoodDao,
-    private val api: GoodsApiService
+    private val api: GoodsApiService,
+    private val shopService: ShopService
 ): ViewModel() {
 
     val compliteSynchronization = MutableLiveData<Boolean>(false)
 
     fun synchronization(){
         viewModelScope.launch (Dispatchers.IO) {
+            val shopDbName = shopService.getSelectShop().dbName
             var goodsDb = dao.getGoodsWithBarcodes()
 
             var _skip = 0
-            val countGoods = api.getGoods(0, 1).count
+            val countGoods = api.getGoods( shopDbName,0, 1).count
             do {
-                var goods = api.getGoods(_skip, 200).goods
+                var goods = api.getGoods(shopDbName, _skip, 200).goods
                 goods.forEach { g->
                     val goodDb= goodsDb.firstOrNull { it.good.uuid == g.uuid }
                     if(goodDb==null) {
                         val id = dao.insertGood(
                             Good(
                                 id = 0,
+                                shopDbName,
                                 uuid = g.uuid,
                                 name = g.name,
                                 unit = GoodUnit.PCE,

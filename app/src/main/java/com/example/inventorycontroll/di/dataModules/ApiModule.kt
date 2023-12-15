@@ -1,6 +1,7 @@
 package com.example.inventorycontroll.di.dataModules
 
 import com.example.inventorycontroll.communication.GoodsApiService
+import com.example.inventorycontroll.communication.ShopApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,4 +35,7 @@ object ApiModule {
     @Provides
     fun providerGoodsApiService(retrofit: Retrofit): GoodsApiService = retrofit.create(GoodsApiService::class.java)
 
+    @Singleton
+    @Provides
+    fun providerShopApiService(retrofit: Retrofit): ShopApiService = retrofit.create(ShopApiService::class.java)
 }

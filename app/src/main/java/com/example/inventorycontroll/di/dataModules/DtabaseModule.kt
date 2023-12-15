@@ -27,4 +27,8 @@ object DtabaseModule {
     @Singleton
     @Provides
     fun  providerGoodsDao(db: InventoryDatabase) = db.goodDao()
+
+    @Singleton
+    @Provides
+    fun providerBarcodeDao(db: InventoryDatabase) = db.barcodeDao()
 }

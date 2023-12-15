@@ -1,22 +1,18 @@
 package com.example.inventorycontroll.inventoryDatabase.entities
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.example.inventorycontroll.inventoryDatabase.Converters
 import java.math.BigDecimal
 
-@Entity(tableName = "goods", indices = [Index(value = ["shopDbName"])])
+@Entity(tableName = "inventorygoods")
 @TypeConverters(Converters::class)
-data class Good (
+data class InventoryGood(
     @PrimaryKey(autoGenerate = true)
-    val id:Long,
-    val shopDbName: String,
-    val uuid: String,
-    val name: String,
-    val unit: GoodUnit,
-    val specialType: SpecilType,
+    val id: Long,
+    val groupId: Long,
+    val goodId: Long,
+    val count: BigDecimal,
     val price: BigDecimal
 )
