@@ -11,8 +11,9 @@ import java.math.BigDecimal
 @TypeConverters(Converters::class)
 data class Good (
     @PrimaryKey(autoGenerate = true)
-    val id:Int,
-    val Name: String,
+    val id:Long,
+    val uuid: String,
+    val name: String,
     val unit: GoodUnit,
     val specialType: SpecilType,
     val price: BigDecimal
