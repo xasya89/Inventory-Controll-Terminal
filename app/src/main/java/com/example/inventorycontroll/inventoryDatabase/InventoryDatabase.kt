@@ -6,6 +6,7 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.example.inventorycontroll.inventoryDatabase.dao.BarcodeDao
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
+import com.example.inventorycontroll.inventoryDatabase.dao.InventoryDao
 import com.example.inventorycontroll.inventoryDatabase.entities.Barcode
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
 import com.example.inventorycontroll.inventoryDatabase.entities.Inventory
@@ -18,4 +19,5 @@ abstract class InventoryDatabase: RoomDatabase() {
 
     abstract fun goodDao(): GoodDao
     abstract fun barcodeDao(): BarcodeDao
+    abstract fun inventoryDao(): InventoryDao
 }

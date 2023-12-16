@@ -10,8 +10,8 @@ import java.math.BigDecimal
 @TypeConverters(Converters::class)
 data class InventoryGroup(
     @PrimaryKey(autoGenerate = true)
-    val id: Long,
-    val InventoryId: Long,
+    var id: Long,
+    val inventoryId: Long,
     val groupName: String,
-    val sum: BigDecimal
+    var sum: BigDecimal
 )

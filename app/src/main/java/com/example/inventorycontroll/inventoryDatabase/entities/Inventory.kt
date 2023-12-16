@@ -12,9 +12,11 @@ import java.util.Date
 @TypeConverters(Converters::class)
 data class Inventory(
     @PrimaryKey(autoGenerate = true)
-    val id: Long,
+    var id: Long,
     val dateCreate: Date,
     val shopDbName: String,
     val startCashMoney: BigDecimal,
-    val goodsSum: BigDecimal
+    val goodsSum: BigDecimal,
+    val isStop: Boolean,
+    val isSendToServer: Boolean
 )

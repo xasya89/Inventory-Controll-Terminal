@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -12,19 +13,26 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import com.example.inventorycontroll.R
 import com.example.inventorycontroll.common.viewModels.KeyListenerViewModel
 import com.example.inventorycontroll.databinding.FragmentInventoryEditorBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import java.math.BigDecimal
 
+@AndroidEntryPoint
 class InventoryEditorFragment : Fragment() {
 
     private lateinit var binding: FragmentInventoryEditorBinding
     private val keyListenerVm by activityViewModels<KeyListenerViewModel> ()
     private val vm by viewModels<InventoryEditorViewModel>()
+
+    private lateinit var spinnerGroups: SpinnerGroups
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -40,33 +48,68 @@ class InventoryEditorFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         keyListenerVm.findGood.observe(viewLifecycleOwner, {good->
-
             if(good!=null)
-                showDialog(good)
+                showDialog(good.name, true, {
+                    if(it=="") return@showDialog
+                    val count = BigDecimal(it)
+                    vm.addPosition(good, count)
+                })
         })
+        spinnerGroups = SpinnerGroups(requireContext(), binding.inventoryEditorGroupSelectList, {})
+
+        init()
+        binding.inventoryEditorAddGroupBtn.setOnClickListener {
+            showDialog("Название группы",false, {
+                vm.addGroup(it, {
+                    spinnerGroups.setGroups(vm.getGroups())
+                })
+            })
+        }
     }
 
-    private fun showDialog(good: Good){
+    private fun  init(){
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            if(vm.getExistInventory()!=null) {
+                viewLifecycleOwner.lifecycleScope.launch (Dispatchers.Main){
+                    spinnerGroups.setGroups(vm.getGroups())
+                }
+                return@launch
+            }
+            viewLifecycleOwner.lifecycleScope.launch (Dispatchers.Main){
+                showDialog("В кассе", true, {
+                    val count = BigDecimal(it)
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        vm.createInventory(count)
+                    }
+                })
+            }
+        }
+    }
+
+    private fun showDialog(title:String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){
         val builder = AlertDialog.Builder(context)
         val inflater = layoutInflater
         val dialogBinding = InputTextDialogBinding.inflate(inflater)
+        if(isNumericInputType)
+            dialogBinding.inputDialogCount.inputType = InputType.TYPE_NUMBER_FLAG_DECIMAL
 
         dialogBinding.inputDialogCount.isFocusableInTouchMode=true
         dialogBinding.inputDialogCount.requestFocus()
         with(builder){
             dialogBinding.inputDialogCount.requestFocus()
-            setTitle(good.name)
+            setTitle(title)
             setView(dialogBinding.root)
         }
         val alertDialog = builder.create()
         dialogBinding.inputDialogSuccessBtn.setOnClickListener {
             if(dialogBinding.inputDialogCount.text.toString()=="") return@setOnClickListener
-            val count = BigDecimal(dialogBinding.inputDialogCount.text.toString())
-            vm.addPosition(good, count)
+
             alertDialog.dismiss()
+            callBackOk?.invoke(dialogBinding.inputDialogCount.text.toString())
         }
         dialogBinding.inputDialogCancelBtn.setOnClickListener {
             alertDialog.dismiss()
+            callBackCancel?.invoke()
         }
         alertDialog.show()
         dialogBinding.inputDialogCount.requestFocus()
