@@ -14,11 +14,13 @@ import android.view.WindowManager
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.inventorycontroll.R
 import com.example.inventorycontroll.common.viewModels.KeyListenerViewModel
 import com.example.inventorycontroll.databinding.FragmentInventoryEditorBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
+import com.example.inventorycontroll.ui.inventoryEditor.adapters.PositionRecycleViewAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -31,17 +33,16 @@ class InventoryEditorFragment : Fragment() {
     private lateinit var binding: FragmentInventoryEditorBinding
     private val keyListenerVm by activityViewModels<KeyListenerViewModel> ()
     private val vm by viewModels<InventoryEditorViewModel>()
+    private lateinit var rcAdapter: PositionRecycleViewAdapter
 
     private lateinit var spinnerGroups: SpinnerGroups
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentInventoryEditorBinding.inflate(inflater)
+        initRecycleView()
         return binding.root
     }
 
@@ -65,6 +66,10 @@ class InventoryEditorFragment : Fragment() {
                 })
             })
         }
+
+        vm.positions.observe(viewLifecycleOwner, {
+            rcAdapter.addList(it)
+        })
     }
 
     private fun  init(){
@@ -84,6 +89,12 @@ class InventoryEditorFragment : Fragment() {
                 })
             }
         }
+    }
+
+    private fun initRecycleView() = with(binding){
+        inventoryEditorRc.layoutManager = LinearLayoutManager(context)
+        rcAdapter = PositionRecycleViewAdapter()
+        inventoryEditorRc.adapter= rcAdapter
     }
 
     private fun showDialog(title:String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventorycontroll.common.shopService.ShopService
 import com.example.inventorycontroll.inventoryDatabase.dao.BarcodeDao
+import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
 import com.example.inventorycontroll.inventoryDatabase.dao.InventoryDao
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
 import com.example.inventorycontroll.inventoryDatabase.entities.Inventory
@@ -22,12 +23,13 @@ import javax.inject.Inject
 @HiltViewModel
 class InventoryEditorViewModel @Inject constructor(
     private val dao: InventoryDao,
+    private val goodsDao: GoodDao,
     private val shopService: ShopService
 ): ViewModel() {
     private val inventory = MutableLiveData<Inventory?>(null)
     private val groups = MutableLiveData<List<InventoryGroup>>(listOf())
     private val selectGroup = MutableLiveData<InventoryGroup?>(null)
-    private val positions = MutableLiveData<List<InventoryPositionModel>>(listOf())
+    val positions = MutableLiveData<List<InventoryPositionModel>>(listOf())
 
     suspend fun getExistInventory(): Inventory?{
         val result = dao.getExistInventory(shopService.getSelectShop().dbName).firstOrNull()
