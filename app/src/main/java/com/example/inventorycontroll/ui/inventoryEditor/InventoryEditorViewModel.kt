@@ -24,6 +24,7 @@ import javax.inject.Inject
 class InventoryEditorViewModel @Inject constructor(
     private val dao: InventoryDao,
     private val goodsDao: GoodDao,
+    private val barcodeDao: BarcodeDao,
     private val shopService: ShopService
 ): ViewModel() {
     private val inventory = MutableLiveData<Inventory?>(null)
@@ -64,6 +65,16 @@ class InventoryEditorViewModel @Inject constructor(
         newInventory.id = id
         inventory.postValue(newInventory)
         return newInventory
+    }
+
+    fun getGood(barcode: String, onFind: (good: Good)->Unit){
+        viewModelScope.launch (Dispatchers.IO) {
+            val good = barcodeDao.getGoodByBarcode(shopService.getSelectShop().dbName, barcode).firstOrNull()
+            if(good==null) return@launch
+            viewModelScope.launch(Dispatchers.Main) {
+                onFind.invoke(good)
+            }
+        }
     }
 
     fun addPosition(good: Good, count: BigDecimal) {

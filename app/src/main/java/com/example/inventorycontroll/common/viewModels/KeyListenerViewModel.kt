@@ -45,6 +45,7 @@ class KeyListenerViewModel @Inject constructor(private val barcodeDao: BarcodeDa
                     findGood.postValue(good)
                     barcode.postValue(_barcode)
                     _barcode=""
+                    isScanActive = false
                 }
             }
             /*

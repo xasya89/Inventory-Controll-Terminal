@@ -1,22 +1,23 @@
 package com.example.inventorycontroll.ui.inventoryEditor
 
 import android.app.AlertDialog
-import android.app.Dialog
-import android.content.DialogInterface
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
+import android.text.Editable
 import android.text.InputType
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import androidx.fragment.app.activityViewModels
+import android.view.inputmethod.InputMethodManager
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.getSystemService
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.inventorycontroll.R
-import com.example.inventorycontroll.common.viewModels.KeyListenerViewModel
 import com.example.inventorycontroll.databinding.FragmentInventoryEditorBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
@@ -24,14 +25,14 @@ import com.example.inventorycontroll.ui.inventoryEditor.adapters.PositionRecycle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
 import java.math.BigDecimal
+
 
 @AndroidEntryPoint
 class InventoryEditorFragment : Fragment() {
 
     private lateinit var binding: FragmentInventoryEditorBinding
-    private val keyListenerVm by activityViewModels<KeyListenerViewModel> ()
+    //private val keyListenerVm by activityViewModels<KeyListenerViewModel> ()
     private val vm by viewModels<InventoryEditorViewModel>()
     private lateinit var rcAdapter: PositionRecycleViewAdapter
 
@@ -48,19 +49,11 @@ class InventoryEditorFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        keyListenerVm.findGood.observe(viewLifecycleOwner, {good->
-            if(good!=null)
-                showDialog(good.name, true, {
-                    if(it=="") return@showDialog
-                    val count = BigDecimal(it)
-                    vm.addPosition(good, count)
-                })
-        })
         spinnerGroups = SpinnerGroups(requireContext(), binding.inventoryEditorGroupSelectList, {})
 
         init()
         binding.inventoryEditorAddGroupBtn.setOnClickListener {
-            showDialog("Название группы",false, {
+            showDialog("Название группы","",false, {
                 vm.addGroup(it, {
                     spinnerGroups.setGroups(vm.getGroups())
                 })
@@ -70,6 +63,34 @@ class InventoryEditorFragment : Fragment() {
         vm.positions.observe(viewLifecycleOwner, {
             rcAdapter.addList(it)
         })
+        val cm = requireContext().getSystemService<ClipboardManager>()
+        cm!!.addPrimaryClipChangedListener {
+            val clip = cm.primaryClip!!.getItemAt(0)
+            val barcode = clip.text.toString()
+            if(barcode=="") return@addPrimaryClipChangedListener
+            vm.getGood(barcode, {
+
+                addOrEditPosition(it)
+            })
+            //cm.clearPrimaryClip()
+        }
+    }
+
+
+    private fun addOrEditPosition(good: Good){
+        val position = vm.positions.value?.find { it.goodId==good.id }
+        if(position==null)
+            showDialog(good.name, "",true, {
+                if(it=="") return@showDialog
+                val count = BigDecimal(it)
+                vm.addPosition(good, count)
+            })
+        else
+            showDialog(good.name, position.count.toString(),true, {
+                if(it=="") return@showDialog
+                val count = BigDecimal(it)
+                vm.addPosition(good, count)
+            })
     }
 
     private fun  init(){
@@ -81,7 +102,7 @@ class InventoryEditorFragment : Fragment() {
                 return@launch
             }
             viewLifecycleOwner.lifecycleScope.launch (Dispatchers.Main){
-                showDialog("В кассе", true, {
+                showDialog("В кассе", "", true, {
                     val count = BigDecimal(it)
                     viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                         vm.createInventory(count)
@@ -95,9 +116,20 @@ class InventoryEditorFragment : Fragment() {
         inventoryEditorRc.layoutManager = LinearLayoutManager(context)
         rcAdapter = PositionRecycleViewAdapter()
         inventoryEditorRc.adapter= rcAdapter
+        /*
+        rcAdapter.onClickGoodName = {
+            Log.d("clicked","click")
+            view?.findFocus()?.let {
+                val imm = getSystemService(requireContext(), Context.INPUT_METHOD_SERVICE::class.java) as? InputMethodManager
+                imm?.hideSoftInputFromWindow(it.windowToken, 0)
+            }
+
+        }
+
+         */
     }
 
-    private fun showDialog(title:String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){
+    private fun showDialog(title:String, prevValue: String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){
         val builder = AlertDialog.Builder(context)
         val inflater = layoutInflater
         val dialogBinding = InputTextDialogBinding.inflate(inflater)
@@ -106,9 +138,10 @@ class InventoryEditorFragment : Fragment() {
 
         dialogBinding.inputDialogCount.isFocusableInTouchMode=true
         dialogBinding.inputDialogCount.requestFocus()
+        dialogBinding.inputDialogCount.text = Editable.Factory().newEditable(prevValue)
         with(builder){
             dialogBinding.inputDialogCount.requestFocus()
-            setTitle(title)
+            dialogBinding.textView2.text = title
             setView(dialogBinding.root)
         }
         val alertDialog = builder.create()
