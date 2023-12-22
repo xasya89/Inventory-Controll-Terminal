@@ -38,6 +38,9 @@ interface GoodDao {
     @Query("SELECT * FROM goods")
     fun getGoods(): List<Good>
 
+    @Query("SELECT * FROM goods WHERE name LIKE :findText AND shopDbName=:shopDbName")
+    fun findGoods(shopDbName: String, findText: String): List<Good>
+
     @Query("SELECT * FROM goods")
     fun getGoodsWithBarcodes(): List<GoodWithBarcodes>
 }

@@ -15,9 +15,12 @@ import android.view.inputmethod.InputMethodManager
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.getSystemService
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.inventorycontroll.R
 import com.example.inventorycontroll.databinding.FragmentInventoryEditorBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
@@ -33,7 +36,7 @@ class InventoryEditorFragment : Fragment() {
 
     private lateinit var binding: FragmentInventoryEditorBinding
     //private val keyListenerVm by activityViewModels<KeyListenerViewModel> ()
-    private val vm by viewModels<InventoryEditorViewModel>()
+    private val vm by activityViewModels<InventoryEditorViewModel>()
     private lateinit var rcAdapter: PositionRecycleViewAdapter
 
     private lateinit var spinnerGroups: SpinnerGroups
@@ -51,6 +54,9 @@ class InventoryEditorFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         spinnerGroups = SpinnerGroups(requireContext(), binding.inventoryEditorGroupSelectList, {})
 
+        binding.inventoryEditorSearchBtn.setOnClickListener {
+            findNavController().navigate(R.id.findGoodFragment)
+        }
         init()
         binding.inventoryEditorAddGroupBtn.setOnClickListener {
             showDialog("Название группы","",false, {
@@ -116,17 +122,6 @@ class InventoryEditorFragment : Fragment() {
         inventoryEditorRc.layoutManager = LinearLayoutManager(context)
         rcAdapter = PositionRecycleViewAdapter()
         inventoryEditorRc.adapter= rcAdapter
-        /*
-        rcAdapter.onClickGoodName = {
-            Log.d("clicked","click")
-            view?.findFocus()?.let {
-                val imm = getSystemService(requireContext(), Context.INPUT_METHOD_SERVICE::class.java) as? InputMethodManager
-                imm?.hideSoftInputFromWindow(it.windowToken, 0)
-            }
-
-        }
-
-         */
     }
 
     private fun showDialog(title:String, prevValue: String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){

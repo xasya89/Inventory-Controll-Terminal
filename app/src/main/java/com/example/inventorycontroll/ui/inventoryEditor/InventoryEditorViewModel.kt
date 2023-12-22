@@ -12,6 +12,7 @@ import com.example.inventorycontroll.inventoryDatabase.entities.Good
 import com.example.inventorycontroll.inventoryDatabase.entities.Inventory
 import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGood
 import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGroup
+import com.example.inventorycontroll.ui.inventoryEditor.models.FindGoodModel
 import com.example.inventorycontroll.ui.inventoryEditor.models.InventoryPositionModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +82,7 @@ class InventoryEditorViewModel @Inject constructor(
         val find = positions.value?.any { it.goodId == good.id } ?: false
         if (!find)
             positions.postValue(
-                positions.value!!.plus(
+                positions.value?.plus(
                     InventoryPositionModel(0, 0, good.id, good.name, good.price, count)
                 )
             )
@@ -91,6 +92,16 @@ class InventoryEditorViewModel @Inject constructor(
                     return@map InventoryPositionModel(it.id, it.groupId, it.goodId, it.goodName, good.price, count)
                 return@map it
             })
+    }
+
+    fun addPositions(goods: List<FindGoodModel>){
+        val list = mutableListOf<InventoryPositionModel>()
+        goods.forEach { good->
+            val position = positions.value?.find { it.goodId==good.id }
+            if(position==null) list.add(InventoryPositionModel(0, 0, good.id, good.name, good.price, BigDecimal(0) ))
+        }
+        list.addAll(positions.value!!)
+        positions.value = list
     }
 
 }

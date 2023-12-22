@@ -24,6 +24,7 @@
             android:layout_height="wrap_content"
             android:width="70dp"
             android:inputType="numberDecimal"
+            android:imeOptions="actionDone"
             app:layout_constraintEnd_toEndOf="parent" />
 
         <ImageButton
