@@ -8,5 +8,5 @@ data class InventoryPositionModel(
     val goodId: Long,
     val goodName: String,
     val price: BigDecimal,
-    val count: BigDecimal
+    var count: BigDecimal
 )

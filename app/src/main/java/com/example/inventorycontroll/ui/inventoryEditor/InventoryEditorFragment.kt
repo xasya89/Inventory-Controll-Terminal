@@ -78,7 +78,6 @@ class InventoryEditorFragment : Fragment() {
 
                 addOrEditPosition(it)
             })
-            //cm.clearPrimaryClip()
         }
     }
 
@@ -122,6 +121,9 @@ class InventoryEditorFragment : Fragment() {
         inventoryEditorRc.layoutManager = LinearLayoutManager(context)
         rcAdapter = PositionRecycleViewAdapter()
         inventoryEditorRc.adapter= rcAdapter
+        rcAdapter.onChangeCount={goodId, count ->
+            vm.changeCountInPosition(goodId, count)
+        }
     }
 
     private fun showDialog(title:String, prevValue: String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){

@@ -3,6 +3,7 @@ package com.example.inventorycontroll.ui.inventoryEditor
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import com.example.inventorycontroll.common.shopService.ShopService
 import com.example.inventorycontroll.inventoryDatabase.dao.BarcodeDao
@@ -104,4 +105,11 @@ class InventoryEditorViewModel @Inject constructor(
         positions.value = list
     }
 
+    fun changeCountInPosition(goodId: Long, count: BigDecimal){
+        positions.value = positions.value?.map {
+            if(it.goodId==goodId)
+                it.count = count
+            return@map it
+        }
+    }
 }
