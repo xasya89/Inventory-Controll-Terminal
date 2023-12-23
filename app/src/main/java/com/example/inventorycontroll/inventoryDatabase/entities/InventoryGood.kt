@@ -13,6 +13,6 @@ data class InventoryGood(
     val id: Long,
     val groupId: Long,
     val goodId: Long,
-    val count: BigDecimal,
-    val price: BigDecimal
+    var count: BigDecimal,
+    var price: BigDecimal
 )

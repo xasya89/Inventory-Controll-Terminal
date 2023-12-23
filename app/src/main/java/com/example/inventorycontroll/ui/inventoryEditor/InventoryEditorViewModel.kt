@@ -29,25 +29,46 @@ class InventoryEditorViewModel @Inject constructor(
     private val barcodeDao: BarcodeDao,
     private val shopService: ShopService
 ): ViewModel() {
-    private val inventory = MutableLiveData<Inventory?>(null)
-    private val groups = MutableLiveData<List<InventoryGroup>>(listOf())
-    private val selectGroup = MutableLiveData<InventoryGroup?>(null)
+    val inventory = MutableLiveData<Inventory?>(null)
+    val groups = MutableLiveData<List<InventoryGroup>>(listOf())
+    val selectGroup = MutableLiveData<InventoryGroup?>(null)
     val positions = MutableLiveData<List<InventoryPositionModel>>(listOf())
+    val isSaveState = MutableLiveData<Boolean>(false)
 
-    suspend fun getExistInventory(): Inventory?{
-        val result = dao.getExistInventory(shopService.getSelectShop().dbName).firstOrNull()
-        inventory.postValue(result)
-        if(result!=null){
-            var _groups = dao.getGroups(result.id)
-            groups.postValue(_groups)
+    fun getInventory(){
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = dao.getExistInventory(shopService.getSelectShop().dbName).firstOrNull()
+            inventory.postValue(result)
+            if(result!=null){
+                var _groups = dao.getGroups(result.id)
+                groups.postValue(_groups)
+                val group = _groups.firstOrNull()
+                selectGroup.postValue(group)
+                val result = dao.getGoods(group!!.id)
+                positions.postValue(result)
+            }
         }
-        return result
     }
 
-    fun getGroups(): List<InventoryGroup>{
-        return groups.value!!.toList()
+    fun createIncentory(money: BigDecimal, onSuccess: ()->Unit){
+        viewModelScope.launch(Dispatchers.IO) {
+            if(inventory.value!=null){
+                inventory.value?.isCancel=true
+            }
+            var id = dao.insertInventory(Inventory(0, Date(), shopService.getSelectShop().dbName, money))
+            val newInventory = dao.getInventoryById(id)
+            inventory.postValue(newInventory)
+            var groupId = dao.insertGroup(InventoryGroup(0, id, "Группа 1", BigDecimal(0)))
+            var _groups = dao.getGroups(id)
+            groups.postValue(_groups)
+            selectGroup.postValue(_groups.firstOrNull())
+            positions.postValue(listOf())
+            viewModelScope.launch(Dispatchers.Main) { onSuccess.invoke() }
+        }
     }
-    fun addGroup(groupName: String, onComplite: ()->Unit){
+
+    fun addGroup(groupName: String){
+        if(isSaveState.value==true) return
         viewModelScope.launch (Dispatchers.IO){
             val newGroup = InventoryGroup(0, inventory.value!!.id, groupName, BigDecimal(0))
             val id = dao.insertGroup(newGroup)
@@ -55,19 +76,18 @@ class InventoryEditorViewModel @Inject constructor(
             val _groups = mutableListOf<InventoryGroup>(newGroup)
             _groups.addAll(groups.value!!)
             groups.postValue(_groups)
-            viewModelScope.launch (Dispatchers.Main){
-                onComplite.invoke()
-            }
+            selectGroup.postValue(newGroup)
+            positions.postValue(listOf())
+        }
+    }
+    fun changeSelectGroup(group: InventoryGroup){
+        selectGroup.value = group
+        viewModelScope.launch (Dispatchers.IO){
+            val result = dao.getGoods(group.id)
+            positions.postValue(result)
         }
     }
 
-    suspend fun createInventory(startCashMoney: BigDecimal): Inventory{
-        val newInventory = Inventory(0, Date(), shopService.getSelectShop().dbName, startCashMoney, BigDecimal(0), false, false)
-        val id = dao.insertInventory(newInventory)
-        newInventory.id = id
-        inventory.postValue(newInventory)
-        return newInventory
-    }
 
     fun getGood(barcode: String, onFind: (good: Good)->Unit){
         viewModelScope.launch (Dispatchers.IO) {
@@ -80,29 +100,57 @@ class InventoryEditorViewModel @Inject constructor(
     }
 
     fun addPosition(good: Good, count: BigDecimal) {
+        val groupId = selectGroup.value?.id
+        if(groupId==null) return
         val find = positions.value?.any { it.goodId == good.id } ?: false
         if (!find)
             positions.postValue(
                 positions.value?.plus(
-                    InventoryPositionModel(0, 0, good.id, good.name, good.price, count)
+                    InventoryPositionModel(0, groupId, good.id, good.name, good.price, count)
                 )
             )
-        else
+        else{
             positions.postValue(positions.value!!.map {
                 if (it.goodId == good.id)
                     return@map InventoryPositionModel(it.id, it.groupId, it.goodId, it.goodName, good.price, count)
                 return@map it
             })
+        }
+        isSaveState.postValue(true)
     }
 
     fun addPositions(goods: List<FindGoodModel>){
-        val list = mutableListOf<InventoryPositionModel>()
-        goods.forEach { good->
-            val position = positions.value?.find { it.goodId==good.id }
-            if(position==null) list.add(InventoryPositionModel(0, 0, good.id, good.name, good.price, BigDecimal(0) ))
+        viewModelScope.launch (Dispatchers.Main){
+            val list = mutableListOf<InventoryPositionModel>()
+            goods.forEach { good->
+                val position = positions.value?.find { it.goodId==good.id }
+                if(position==null) list.add(InventoryPositionModel(0, selectGroup.value!!.id, good.id, good.name, good.price, BigDecimal(0) ))
+            }
+            list.addAll(positions.value!!)
+            positions.postValue(list)
+            isSaveState.postValue(true)
         }
-        list.addAll(positions.value!!)
-        positions.value = list
+    }
+
+    fun savePositions(){
+        viewModelScope.launch (Dispatchers.IO){
+            val list = mutableListOf<InventoryPositionModel>()
+            positions.value?.forEach {
+                if(it.id==0L){
+                    val id = dao.insertGood(InventoryGood(0, it.groupId, it.goodId, it.count, it.price))
+                    it.id=id
+                }
+                else{
+                    val result = dao.getGood(it.id)
+                    result.count = it.count
+                    result.price = it.price
+                    dao.updateGood(result)
+                }
+                list.add(it)
+            }
+            positions.postValue(list)
+            isSaveState.postValue(false)
+        }
     }
 
     fun changeCountInPosition(goodId: Long, count: BigDecimal){
@@ -111,5 +159,6 @@ class InventoryEditorViewModel @Inject constructor(
                 it.count = count
             return@map it
         }
+        isSaveState.value = true
     }
 }

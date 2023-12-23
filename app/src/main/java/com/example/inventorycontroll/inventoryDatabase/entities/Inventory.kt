@@ -16,7 +16,8 @@ data class Inventory(
     val dateCreate: Date,
     val shopDbName: String,
     val startCashMoney: BigDecimal,
-    val goodsSum: BigDecimal,
-    val isStop: Boolean,
-    val isSendToServer: Boolean
+    var goodsSum: BigDecimal = BigDecimal(0),
+    var isStop: Boolean = false,
+    var isSendToServer: Boolean = false,
+    var isCancel: Boolean = false
 )

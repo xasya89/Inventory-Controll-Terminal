@@ -18,7 +18,7 @@ import com.example.inventorycontroll.databinding.InventoryEditorPositionBinding
 import com.example.inventorycontroll.ui.inventoryEditor.models.InventoryPositionModel
 import java.math.BigDecimal
 
-class PositionRecycleViewAdapter():RecyclerView.Adapter<PositionRecycleViewAdapter.ViewHolder>() {
+class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->Unit):RecyclerView.Adapter<PositionRecycleViewAdapter.ViewHolder>() {
 
     private var _positions = mutableListOf<InventoryPositionModel>()
 
@@ -33,7 +33,7 @@ class PositionRecycleViewAdapter():RecyclerView.Adapter<PositionRecycleViewAdapt
         notifyDataSetChanged()
     }
 
-    var onChangeCount: ((goodId: Long, count: BigDecimal) -> Unit)? = null
+    //var onChangeCount: ((goodId: Long, count: BigDecimal) -> Unit)? = null
 
     inner class ViewHolder(view: View): RecyclerView.ViewHolder(view){
         val binding = InventoryEditorPositionBinding.bind(view)

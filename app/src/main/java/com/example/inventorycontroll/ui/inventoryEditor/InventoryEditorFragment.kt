@@ -35,9 +35,8 @@ import java.math.BigDecimal
 class InventoryEditorFragment : Fragment() {
 
     private lateinit var binding: FragmentInventoryEditorBinding
-    //private val keyListenerVm by activityViewModels<KeyListenerViewModel> ()
     private val vm by activityViewModels<InventoryEditorViewModel>()
-    private lateinit var rcAdapter: PositionRecycleViewAdapter
+    private val rcAdapter=PositionRecycleViewAdapter({goodId, newCount -> vm.changeCountInPosition(goodId, newCount)})
 
     private lateinit var spinnerGroups: SpinnerGroups
 
@@ -46,85 +45,80 @@ class InventoryEditorFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentInventoryEditorBinding.inflate(inflater)
-        initRecycleView()
+        with(binding){
+            inventoryEditorRc.layoutManager = LinearLayoutManager(context)
+            inventoryEditorRc.adapter= rcAdapter
+            inventoryEditorSearchBtn.setOnClickListener {
+                findNavController().navigate(R.id.findGoodFragment)
+            }
+
+            spinnerGroups = SpinnerGroups(requireContext(), inventoryEditorGroupSelectList, {
+                vm.changeSelectGroup(it)
+            })
+
+            binding.inventoryEditorAddGroupBtn.setOnClickListener {
+                showDialog("Название группы","",false, {
+                    vm.addGroup(it)
+                })
+            }
+
+            binding.inventoryEditorPositionsSave.setOnClickListener {
+                vm.savePositions()
+            }
+        }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        spinnerGroups = SpinnerGroups(requireContext(), binding.inventoryEditorGroupSelectList, {})
-
-        binding.inventoryEditorSearchBtn.setOnClickListener {
-            findNavController().navigate(R.id.findGoodFragment)
-        }
-        init()
-        binding.inventoryEditorAddGroupBtn.setOnClickListener {
-            showDialog("Название группы","",false, {
-                vm.addGroup(it, {
-                    spinnerGroups.setGroups(vm.getGroups())
-                })
-            })
-        }
+        vm.groups.observe(viewLifecycleOwner, {
+            if(it!=null)
+                spinnerGroups.setGroups(it)
+        })
+        vm.selectGroup.observe(viewLifecycleOwner,{
+            if(it==null){
+                binding.inventoryEditorGroupSelectList.setSelection(-1)
+                return@observe
+            }
+            val pos = vm.groups.value!!.indexOf(it)
+            binding.inventoryEditorGroupSelectList.setSelection(pos)
+        })
 
         vm.positions.observe(viewLifecycleOwner, {
             rcAdapter.addList(it)
         })
+
+        vm.isSaveState.observe(viewLifecycleOwner,{
+            binding.inventoryEditorPositionsSave.visibility = if(it==true) View.VISIBLE else View.GONE
+        })
+
+        initClipboardService()
+    }
+
+    private fun initClipboardService(){
         val cm = requireContext().getSystemService<ClipboardManager>()
         cm!!.addPrimaryClipChangedListener {
             val clip = cm.primaryClip!!.getItemAt(0)
             val barcode = clip.text.toString()
             if(barcode=="") return@addPrimaryClipChangedListener
-            vm.getGood(barcode, {
-
-                addOrEditPosition(it)
+            vm.getGood(barcode, {good->
+                val position = vm.positions.value?.find { it.goodId==good.id }
+                if(position==null)
+                    showDialog(good.name, "",true, {
+                        if(it=="") return@showDialog
+                        val count = BigDecimal(it)
+                        vm.addPosition(good, count)
+                    })
+                else
+                    showDialog(good.name, position.count.toString(),true, {
+                        if(it=="") return@showDialog
+                        val count = BigDecimal(it)
+                        vm.addPosition(good, count)
+                    })
             })
         }
     }
 
-
-    private fun addOrEditPosition(good: Good){
-        val position = vm.positions.value?.find { it.goodId==good.id }
-        if(position==null)
-            showDialog(good.name, "",true, {
-                if(it=="") return@showDialog
-                val count = BigDecimal(it)
-                vm.addPosition(good, count)
-            })
-        else
-            showDialog(good.name, position.count.toString(),true, {
-                if(it=="") return@showDialog
-                val count = BigDecimal(it)
-                vm.addPosition(good, count)
-            })
-    }
-
-    private fun  init(){
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            if(vm.getExistInventory()!=null) {
-                viewLifecycleOwner.lifecycleScope.launch (Dispatchers.Main){
-                    spinnerGroups.setGroups(vm.getGroups())
-                }
-                return@launch
-            }
-            viewLifecycleOwner.lifecycleScope.launch (Dispatchers.Main){
-                showDialog("В кассе", "", true, {
-                    val count = BigDecimal(it)
-                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        vm.createInventory(count)
-                    }
-                })
-            }
-        }
-    }
-
-    private fun initRecycleView() = with(binding){
-        inventoryEditorRc.layoutManager = LinearLayoutManager(context)
-        rcAdapter = PositionRecycleViewAdapter()
-        inventoryEditorRc.adapter= rcAdapter
-        rcAdapter.onChangeCount={goodId, count ->
-            vm.changeCountInPosition(goodId, count)
-        }
-    }
 
     private fun showDialog(title:String, prevValue: String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){
         val builder = AlertDialog.Builder(context)
