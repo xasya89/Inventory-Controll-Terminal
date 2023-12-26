@@ -21,6 +21,9 @@ interface InventoryDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertGroup(inventoryGroup: InventoryGroup): Long
+    @Update
+    fun updateGroups(groups: List<InventoryGroup>)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertGood(inventoryGood: InventoryGood): Long
     @Update

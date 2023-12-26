@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import android.widget.TextView
 import android.widget.TextView.OnEditorActionListener
 import androidx.fragment.app.activityViewModels
@@ -16,9 +17,13 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.inventorycontroll.R
+import com.example.inventorycontroll.common.Debounce
 import com.example.inventorycontroll.databinding.FragmentFindGoodBinding
 import com.example.inventorycontroll.ui.inventoryEditor.adapters.FindGoodAdapter
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class FindGoodFragment : Fragment() {
@@ -35,29 +40,26 @@ class FindGoodFragment : Fragment() {
         binding.findGoodRecycleView.layoutManager = LinearLayoutManager(requireContext())
         adapter = FindGoodAdapter()
         binding.findGoodRecycleView.adapter = adapter
-        binding.findGoodEdit.setOnEditorActionListener(object :OnEditorActionListener{
-            override fun onEditorAction(view: TextView?, actionId: Int, event: KeyEvent?): Boolean {
-                if (actionId == EditorInfo.IME_ACTION_SEARCH
-                    || actionId == EditorInfo.IME_ACTION_DONE
-                    || event?.getAction() == KeyEvent.ACTION_DOWN
-                    && event?.getKeyCode() == KeyEvent.KEYCODE_ENTER)
-                {
-                    view?.clearFocus()
-                    val inputMethodManager = view?.getContext()?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                    inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
 
-                    findGoodViewModel.find(view.text.toString())
+        val debounce = Debounce(300L, {
+            findGoodViewModel.find(it)
+        })
 
-                    return true
-                }
-
-                return false
+        binding.findGoodEdit.setOnQueryTextListener(object: OnQueryTextListener{
+            override fun onQueryTextSubmit(p0: String?): Boolean {
+                return true
             }
+
+            override fun onQueryTextChange(p0: String?): Boolean {
+                debounce.offer(p0)
+                return true
+            }
+
         })
 
         binding.findGoodSave.setOnClickListener {
             vm.addPositions(findGoodViewModel.goods.value!!.filter { it.isSelected })
-            findNavController().navigate(R.id.nav_inventory_editor)
+            findNavController().navigate(R.id.nav_inventory_editor_main_viewpage)
         }
 
         return binding.root

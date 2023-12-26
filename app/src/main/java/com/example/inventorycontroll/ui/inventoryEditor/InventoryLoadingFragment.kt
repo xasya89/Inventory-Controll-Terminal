@@ -30,13 +30,13 @@ class InventoryLoadingFragment : Fragment() {
             showDialog({
                 vm.createIncentory(it.toBigDecimal(),{
                     binding.inventoryLoaderOpenBtn.setOnClickListener {
-                        findNavController().navigate(R.id.nav_inventory_editor)
+                        findNavController().navigate(R.id.nav_inventory_editor_main_viewpage)
                     }
                 })
             })
         }
         binding.inventoryLoaderOpenBtn.setOnClickListener {
-            findNavController().navigate(R.id.nav_inventory_editor)
+            findNavController().navigate(R.id.nav_inventory_editor_main_viewpage)
         }
         return binding.root
     }

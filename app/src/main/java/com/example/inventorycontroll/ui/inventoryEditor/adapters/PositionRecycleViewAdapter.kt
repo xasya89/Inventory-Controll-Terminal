@@ -2,6 +2,7 @@ package com.example.inventorycontroll.ui.inventoryEditor.adapters
 
 import android.content.Context
 import android.text.Editable
+import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -14,8 +15,12 @@ import android.widget.TextView
 import android.widget.TextView.OnEditorActionListener
 import androidx.recyclerview.widget.RecyclerView
 import com.example.inventorycontroll.R
+import com.example.inventorycontroll.common.Debounce
 import com.example.inventorycontroll.databinding.InventoryEditorPositionBinding
 import com.example.inventorycontroll.ui.inventoryEditor.models.InventoryPositionModel
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 
 class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->Unit):RecyclerView.Adapter<PositionRecycleViewAdapter.ViewHolder>() {
@@ -38,7 +43,24 @@ class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->
     inner class ViewHolder(view: View): RecyclerView.ViewHolder(view){
         val binding = InventoryEditorPositionBinding.bind(view)
 
+        private fun onChange() = with(binding) {
+            val position = _positions.get(adapterPosition)
+            val count: BigDecimal =
+                if (positionGoodCount.text.toString() == "") BigDecimal(0) else BigDecimal(
+                    positionGoodCount.text.toString()
+                )
+            onChangeCount?.invoke(position.goodId, count)
+        }
+        private var isBindComplite = false
         init {
+            binding.positionGoodCount.addTextChangedListener(object: TextWatcher{
+                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+                override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                    if(isBindComplite) onChange()
+                }
+                override fun afterTextChanged(p0: Editable?) { }
+            })
+
             binding.positionGoodCount.setOnEditorActionListener(object: OnEditorActionListener{
                 override fun onEditorAction(view: TextView?, actionId: Int, event: KeyEvent?): Boolean {
                     if (actionId == EditorInfo.IME_ACTION_SEARCH
@@ -49,10 +71,7 @@ class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->
                         view?.clearFocus()
                         val inputMethodManager = view?.getContext()?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                         inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
-                        val position = _positions.get(adapterPosition)
-                        val count: BigDecimal = if(view.text.toString()=="") BigDecimal(0) else BigDecimal(view.text.toString())
-                        onChangeCount?.invoke(position.goodId, count)
-
+                        onChange()
                         return true
                     }
 
@@ -62,8 +81,10 @@ class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->
         }
 
         fun bind(position: InventoryPositionModel) = with(binding){
+            isBindComplite = false
             positionGoodName.text = position.goodName
             positionGoodCount.text = Editable.Factory.getInstance().newEditable( position.count.toString())
+            isBindComplite = true
         }
     }
 

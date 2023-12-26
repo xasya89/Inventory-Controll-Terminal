@@ -81,6 +81,7 @@ class InventoryEditorViewModel @Inject constructor(
         }
     }
     fun changeSelectGroup(group: InventoryGroup){
+        if(selectGroup.value==group) return
         selectGroup.value = group
         viewModelScope.launch (Dispatchers.IO){
             val result = dao.getGoods(group.id)
@@ -102,8 +103,8 @@ class InventoryEditorViewModel @Inject constructor(
     fun addPosition(good: Good, count: BigDecimal) {
         val groupId = selectGroup.value?.id
         if(groupId==null) return
-        val find = positions.value?.any { it.goodId == good.id } ?: false
-        if (!find)
+        val position = positions.value?.find { it.goodId == good.id }
+        if (position == null)
             positions.postValue(
                 positions.value?.plus(
                     InventoryPositionModel(0, groupId, good.id, good.name, good.price, count)
@@ -116,7 +117,22 @@ class InventoryEditorViewModel @Inject constructor(
                 return@map it
             })
         }
+
+        onChangeSum(position?.count, count, good.price)
         isSaveState.postValue(true)
+    }
+
+    private fun onChangeSum(oldCount: BigDecimal?, newCount: BigDecimal, price: BigDecimal){
+        var sum = inventory.value!!.goodsSum+  (newCount - (oldCount ?: BigDecimal(0))) * price
+        inventory.value!!.goodsSum = sum
+        inventory.postValue(inventory.value)
+
+        groups.postValue(
+        groups.value?.map {
+            if(selectGroup.value!=null && it.id == selectGroup.value!!.id)
+                it.sum = it.sum +  (newCount - (oldCount ?: BigDecimal(0))) * price
+            return@map it
+        })
     }
 
     fun addPositions(goods: List<FindGoodModel>){
@@ -150,13 +166,19 @@ class InventoryEditorViewModel @Inject constructor(
             }
             positions.postValue(list)
             isSaveState.postValue(false)
+
+            dao.updateInventory(inventory.value!!)
+            dao.updateGroups(groups.value!!)
         }
     }
 
     fun changeCountInPosition(goodId: Long, count: BigDecimal){
         positions.value = positions.value?.map {
-            if(it.goodId==goodId)
+            if(it.goodId==goodId){
+                onChangeSum(it.count, count, it.price)
                 it.count = count
+            }
+
             return@map it
         }
         isSaveState.value = true
