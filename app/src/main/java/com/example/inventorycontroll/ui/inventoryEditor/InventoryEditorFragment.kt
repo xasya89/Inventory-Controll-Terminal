@@ -85,7 +85,7 @@ class InventoryEditorFragment : Fragment() {
         })
 
         vm.positions.observe(viewLifecycleOwner, {
-            rcAdapter.addList(it)
+            rcAdapter.setPositions(it)
         })
 
         vm.isSaveState.observe(viewLifecycleOwner,{

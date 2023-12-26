@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
@@ -103,8 +104,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        if(event?.keyCode==115){
+            val view = this.currentFocus
+            view?.clearFocus()
+            if(view==null) return false
+            val inputMethodManager = this.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+            return false
+        }
         keyListenerVm.appendKey(event)
-        if(event?.keyCode==KeyEvent.KEYCODE_ENTER) return false;
+        //if(event?.keyCode==KeyEvent.KEYCODE_ENTER) return false;
         return super.dispatchKeyEvent(event)
     }
 }
