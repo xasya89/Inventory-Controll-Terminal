@@ -57,16 +57,7 @@ class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->
         positions = items
         diifResult.dispatchUpdatesTo(this)
     }
-    /*
-    var positions:List<InventoryPositionModel> = emptyList()
-        set(value) {
-            //val diffCalback = PositionDiffUtillCallback(positions, value)
-            //val diifResult = DiffUtil.calculateDiff(diffCalback)
-            positions = value
-            notifyDataSetChanged()
-            //diifResult.dispatchUpdatesTo(this)
-        }
-*/
+
     inner class ViewHolder(view: View): RecyclerView.ViewHolder(view){
         val binding = InventoryEditorPositionBinding.bind(view)
 

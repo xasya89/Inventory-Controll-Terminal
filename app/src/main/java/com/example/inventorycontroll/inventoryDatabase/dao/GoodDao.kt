@@ -35,8 +35,8 @@ interface GoodDao {
     @Delete
     fun deleteBarcodes(barcodes: List<Barcode>)
 
-    @Query("SELECT * FROM goods")
-    fun getGoods(): List<Good>
+    @Query("SELECT * FROM goods WHERE shopDbName=:shopDbName")
+    fun getGoods(shopDbName: String): List<Good>
 
     @Query("SELECT * FROM goods WHERE name LIKE :findText AND shopDbName=:shopDbName")
     fun findGoods(shopDbName: String, findText: String): List<Good>

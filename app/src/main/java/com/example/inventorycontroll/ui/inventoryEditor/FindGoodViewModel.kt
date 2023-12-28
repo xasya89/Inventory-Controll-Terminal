@@ -21,6 +21,7 @@ class FindGoodViewModel @Inject constructor(
     fun find(searchText: String){
         if(searchText=="") return
         viewModelScope.launch (Dispatchers.IO){
+            val goosSize = goodDao.getGoods(shopService.getSelectShop().dbName).size
             val result = goodDao.findGoods(shopService.getSelectShop().dbName, "%"+searchText+"%")
             goods.postValue(result.map { FindGoodModel(it.id, it.name, it.price) })
         }

@@ -63,12 +63,19 @@
         app:layout_constraintStart_toEndOf="@+id/textView4"
         app:layout_constraintTop_toBottomOf="@+id/barrier2" />
 
+    <Button
+        android:id="@+id/invnetory_send_to_server"
+        android:text="Отправить"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@+id/inventory_summary_goods_all"/>
+
     <ListView
         android:id="@+id/inventory_summary_positions"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/inventory_summary_goods_all"
+        app:layout_constraintTop_toBottomOf="@+id/invnetory_send_to_server"
         tools:layout_editor_absoluteX="32dp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

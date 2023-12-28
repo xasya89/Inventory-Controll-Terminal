@@ -1,11 +1,16 @@
 package com.example.inventorycontroll.ui.inventoryEditor
 
+import android.provider.ContactsContract.Groups
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import com.example.inventorycontroll.common.shopService.ShopService
+import com.example.inventorycontroll.communication.InventoryApiService
+import com.example.inventorycontroll.communication.model.InventoryGoodModelApi
+import com.example.inventorycontroll.communication.model.InventoryModelApi
+import com.example.inventorycontroll.communication.model.InvnetoryGroupModelApi
 import com.example.inventorycontroll.inventoryDatabase.dao.BarcodeDao
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
 import com.example.inventorycontroll.inventoryDatabase.dao.InventoryDao
@@ -16,10 +21,12 @@ import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGroup
 import com.example.inventorycontroll.ui.inventoryEditor.models.FindGoodModel
 import com.example.inventorycontroll.ui.inventoryEditor.models.InventoryPositionModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,7 +34,8 @@ class InventoryEditorViewModel @Inject constructor(
     private val dao: InventoryDao,
     private val goodsDao: GoodDao,
     private val barcodeDao: BarcodeDao,
-    private val shopService: ShopService
+    private val shopService: ShopService,
+    private val inventoryApi: InventoryApiService
 ): ViewModel() {
     val inventory = MutableLiveData<Inventory?>(null)
     val groups = MutableLiveData<List<InventoryGroup>>(listOf())
@@ -150,26 +158,30 @@ class InventoryEditorViewModel @Inject constructor(
 
     fun savePositions(){
         viewModelScope.launch (Dispatchers.IO){
-            val list = mutableListOf<InventoryPositionModel>()
-            positions.value?.forEach {
-                if(it.id==0L){
-                    val id = dao.insertGood(InventoryGood(0, it.groupId, it.goodId, it.count, it.price))
-                    it.id=id
-                }
-                else{
-                    val result = dao.getGood(it.id)
-                    result.count = it.count
-                    result.price = it.price
-                    dao.updateGood(result)
-                }
-                list.add(it)
-            }
-            positions.postValue(list)
-            isSaveState.postValue(false)
-
-            dao.updateInventory(inventory.value!!)
-            dao.updateGroups(groups.value!!)
+            _savePositions()
         }
+    }
+
+    suspend fun _savePositions(){
+        val list = mutableListOf<InventoryPositionModel>()
+        positions.value?.forEach {
+            if(it.id==0L){
+                val id = dao.insertGood(InventoryGood(0, it.groupId, it.goodId, it.count, it.price))
+                it.id=id
+            }
+            else{
+                val result = dao.getGood(it.id)
+                result.count = it.count
+                result.price = it.price
+                dao.updateGood(result)
+            }
+            list.add(it)
+        }
+        positions.postValue(list)
+        isSaveState.postValue(false)
+
+        dao.updateInventory(inventory.value!!)
+        dao.updateGroups(groups.value!!)
     }
 
     fun changeCountInPosition(goodId: Long, count: BigDecimal){
@@ -182,5 +194,43 @@ class InventoryEditorViewModel @Inject constructor(
             return@map it
         }
         isSaveState.value = true
+    }
+
+    fun send(onSuccess: () -> Unit){
+        viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
+            _savePositions()
+            val _inventory = inventory.value!!
+            val goodsDb = goodsDao.getGoods(shopService.getSelectShop().dbName)
+            val groups = dao.getGroupsWithGoods(_inventory.id).map {
+                InvnetoryGroupModelApi(
+                    it.group.groupName,
+                    it.goods.map { pos ->
+                        InventoryGoodModelApi(
+                            goodsDb.find { it.id==pos.goodId }!!.uuid,
+                            pos.price,
+                            pos.count
+                        )
+                    }
+                )
+            }
+            inventoryApi.SendInventory(shopService.getSelectShop().dbName, InventoryModelApi(
+                UUID.randomUUID().toString(),
+                inventory.value!!.dateCreate,
+                inventory.value!!.startCashMoney,
+                groups
+                ))
+            inventory.value?.isSendToServer = true
+            inventory.value?.isStop = true
+            dao.updateInventory(inventory.value!!)
+            viewModelScope.launch(Dispatchers.Main){
+                onSuccess.invoke()
+            }
+        }
+    }
+
+    private fun getCoroutineExceptionHandler(): CoroutineExceptionHandler {
+        return CoroutineExceptionHandler { context, throwable ->
+            Log.e("error", throwable.message.toString())
+        }
     }
 }

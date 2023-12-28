@@ -8,6 +8,7 @@ import androidx.room.Update
 import com.example.inventorycontroll.inventoryDatabase.entities.Inventory
 import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGood
 import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGroup
+import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGroupWithGoods
 import com.example.inventorycontroll.ui.inventoryEditor.models.InventoryPositionModel
 
 @Dao
@@ -38,4 +39,7 @@ interface InventoryDao {
 
     @Query("SELECT * FROM inventorygroups WHERE inventoryId=:inventoryId")
     fun getGroups(inventoryId:Long): List<InventoryGroup>
+
+    @Query("SELECT * FROM inventorygroups WHERE inventoryId=:id")
+    fun getGroupsWithGoods(id: Long):List<InventoryGroupWithGoods>
 }
