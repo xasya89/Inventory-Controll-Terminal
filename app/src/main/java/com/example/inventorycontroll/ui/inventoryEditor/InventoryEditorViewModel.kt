@@ -7,10 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import com.example.inventorycontroll.common.shopService.ShopService
+import com.example.inventorycontroll.communication.BalanceApiService
 import com.example.inventorycontroll.communication.InventoryApiService
 import com.example.inventorycontroll.communication.model.InventoryGoodModelApi
 import com.example.inventorycontroll.communication.model.InventoryModelApi
 import com.example.inventorycontroll.communication.model.InvnetoryGroupModelApi
+import com.example.inventorycontroll.inventoryDatabase.dao.BalanceDao
 import com.example.inventorycontroll.inventoryDatabase.dao.BarcodeDao
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
 import com.example.inventorycontroll.inventoryDatabase.dao.InventoryDao
@@ -18,6 +20,7 @@ import com.example.inventorycontroll.inventoryDatabase.entities.Good
 import com.example.inventorycontroll.inventoryDatabase.entities.Inventory
 import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGood
 import com.example.inventorycontroll.inventoryDatabase.entities.InventoryGroup
+import com.example.inventorycontroll.ui.inventoryEditor.bizLogic.SynchBalance
 import com.example.inventorycontroll.ui.inventoryEditor.models.FindGoodModel
 import com.example.inventorycontroll.ui.inventoryEditor.models.InventoryPositionModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,8 +37,10 @@ class InventoryEditorViewModel @Inject constructor(
     private val dao: InventoryDao,
     private val goodsDao: GoodDao,
     private val barcodeDao: BarcodeDao,
+    private val balanceDao: BalanceDao,
     private val shopService: ShopService,
-    private val inventoryApi: InventoryApiService
+    private val inventoryApi: InventoryApiService,
+    private val balanceApiService: BalanceApiService
 ): ViewModel() {
     val inventory = MutableLiveData<Inventory?>(null)
     val groups = MutableLiveData<List<InventoryGroup>>(listOf())
@@ -71,6 +76,9 @@ class InventoryEditorViewModel @Inject constructor(
             groups.postValue(_groups)
             selectGroup.postValue(_groups.firstOrNull())
             positions.postValue(listOf())
+
+            SynchBalance(shopService.getSelectShop().dbName, balanceApiService, balanceDao, goodsDao).synch()
+
             viewModelScope.launch(Dispatchers.Main) { onSuccess.invoke() }
         }
     }
@@ -101,7 +109,7 @@ class InventoryEditorViewModel @Inject constructor(
     fun getGood(barcode: String, onFind: (good: Good)->Unit){
         viewModelScope.launch (Dispatchers.IO) {
             val good = barcodeDao.getGoodByBarcode(shopService.getSelectShop().dbName, barcode).firstOrNull()
-            if(good==null) return@launch
+                ?: return@launch
             viewModelScope.launch(Dispatchers.Main) {
                 onFind.invoke(good)
             }

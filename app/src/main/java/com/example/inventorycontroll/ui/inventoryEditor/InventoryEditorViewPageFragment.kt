@@ -17,7 +17,8 @@ class InventoryEditorViewPageFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentInventoryEditorViewPageBinding.inflate(inflater)
-        binding.inventoryEditorMainViewpageContainer.adapter = InventoryViewPageAdapter(this)
+        val inventoryId = requireArguments().getLong("inventoryId")
+        binding.inventoryEditorMainViewpageContainer.adapter = InventoryViewPageAdapter(inventoryId, this)
         return binding.root
     }
 

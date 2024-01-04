@@ -100,7 +100,7 @@ class InventoryEditorFragment : Fragment() {
         cm!!.addPrimaryClipChangedListener {
             val clip = cm.primaryClip!!.getItemAt(0)
             val barcode = clip.text.toString()
-            if(barcode=="") return@addPrimaryClipChangedListener
+                if(barcode=="") return@addPrimaryClipChangedListener
             vm.getGood(barcode, {good->
                 val position = vm.positions.value?.find { it.goodId==good.id }
                 if(position==null)

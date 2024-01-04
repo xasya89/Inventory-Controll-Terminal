@@ -41,10 +41,19 @@
         android:id="@+id/nav_inventory_loading"
         android:name="com.example.inventorycontroll.ui.inventoryEditor.InventoryLoadingFragment"
         android:label="fragment_inventory_loading"
-        tools:layout="@layout/fragment_inventory_loading" />
+        tools:layout="@layout/fragment_inventory_loading" >
+        <action
+            android:id="@+id/action_nav_inventory_loading_to_nav_inventory_editor_main_viewpage"
+            app:destination="@id/nav_inventory_editor_main_viewpage" />
+    </fragment>
     <fragment
         android:id="@+id/nav_inventory_editor_main_viewpage"
         android:name="com.example.inventorycontroll.ui.inventoryEditor.InventoryEditorViewPageFragment"
         android:label="fragment_inventory_editor_view_page"
-        tools:layout="@layout/fragment_inventory_editor_view_page" />
+        tools:layout="@layout/fragment_inventory_editor_view_page" >
+        <argument
+            android:name="inventoryId"
+            app:argType="long"
+            android:defaultValue="0L" />
+    </fragment>
 </navigation>

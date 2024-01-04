@@ -36,7 +36,9 @@ class InventoryLoadingFragment : Fragment() {
             })
         }
         binding.inventoryLoaderOpenBtn.setOnClickListener {
-            findNavController().navigate(R.id.nav_inventory_editor_main_viewpage)
+            val bundle = Bundle()
+            bundle.putLong("inventoryId", vm.inventory.value!!.id)
+            findNavController().navigate(R.id.nav_inventory_editor_main_viewpage, bundle)
         }
         return binding.root
     }

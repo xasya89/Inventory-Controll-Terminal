@@ -37,4 +37,12 @@ object DtabaseModule {
     @Singleton
     @Provides
     fun providerInventoryDao(db: InventoryDatabase) = db.inventoryDao()
+
+    @Singleton
+    @Provides
+    fun providerBalance(db: InventoryDatabase) = db.balanceDao()
+
+    @Singleton
+    @Provides
+    fun providerInventoryGroupingDao(db: InventoryDatabase) = db.inventoryGroupingDao()
 }

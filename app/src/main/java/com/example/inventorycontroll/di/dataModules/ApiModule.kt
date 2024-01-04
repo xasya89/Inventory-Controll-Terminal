@@ -1,5 +1,6 @@
 package com.example.inventorycontroll.di.dataModules
 
+import com.example.inventorycontroll.communication.BalanceApiService
 import com.example.inventorycontroll.communication.GoodsApiService
 import com.example.inventorycontroll.communication.InventoryApiService
 import com.example.inventorycontroll.communication.ShopApiService
@@ -17,8 +18,8 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ApiModule {
-    //private const val BASE_URL = "https://notebook.exp-tech.com/api-inventory/"
-    private const val BASE_URL = "http://192.168.1.200:5156/api-inventory/"
+    private const val BASE_URL = "https://notebook.exp-tech.com/api-inventory/"
+    //private const val BASE_URL = "http://192.168.1.200:5156/api-inventory/"
 
     @Singleton
     @Provides
@@ -49,4 +50,7 @@ object ApiModule {
     @Singleton
     @Provides
     fun providerInventoryApiService(retrofit: Retrofit): InventoryApiService = retrofit.create(InventoryApiService::class.java)
+    @Singleton
+    @Provides
+    fun providerBalanceApiService(retrofit: Retrofit): BalanceApiService = retrofit.create(BalanceApiService::class.java)
 }
