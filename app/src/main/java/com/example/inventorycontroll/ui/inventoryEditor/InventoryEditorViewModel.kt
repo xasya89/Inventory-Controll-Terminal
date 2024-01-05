@@ -68,6 +68,8 @@ class InventoryEditorViewModel @Inject constructor(
             if(inventory.value!=null){
                 inventory.value?.isCancel=true
             }
+            val shopDbName = shopService.getSelectShop().dbName
+            dao.canceledActiveInventory(shopDbName)
             var id = dao.insertInventory(Inventory(0, Date(), shopService.getSelectShop().dbName, money))
             val newInventory = dao.getInventoryById(id)
             inventory.postValue(newInventory)

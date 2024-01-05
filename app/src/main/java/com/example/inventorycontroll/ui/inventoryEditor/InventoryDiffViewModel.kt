@@ -4,6 +4,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.inventorycontroll.common.shopService.ShopService
 import com.example.inventorycontroll.communication.BalanceApiService
 import com.example.inventorycontroll.inventoryDatabase.dao.BalanceDao
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
@@ -19,44 +20,23 @@ import javax.inject.Inject
 
 @HiltViewModel
 class InventoryDiffViewModel @Inject constructor(
-    private val goodDao: GoodDao,
-    private val inventoryDao: InventoryDao,
-    private val invnetoryGroupingDao: InventoryGroupingDao,
-    private val balanceDao: BalanceDao,
-    private val balanceApiService: BalanceApiService
+    private val shopService: ShopService,
+    private val invnetoryGroupingDao: InventoryGroupingDao
 ): ViewModel() {
     val balance = MutableLiveData<List<BalanceDiffItemModel>>(listOf())
-
-    fun recalcBalance(){
-        viewModelScope.launch (Dispatchers.IO) {
-            SynchBalance("Shop3",balanceApiService, balanceDao, goodDao).synch()
-        }
-    }
+    val isLoadingState = MutableLiveData<Boolean>(false)
     fun getDiff(inventoryId: Long){
+        isLoadingState.value = false
         viewModelScope.launch (Dispatchers.IO){
-            val inventory = inventoryDao.getInventoryById(inventoryId)!!
-            val _balance = balanceDao.getBalance(inventory.shopDbName)
-            val goods = goodDao.getGoods(inventory.shopDbName)
-            val inventoryGoods = invnetoryGroupingDao.getCountGroupingGood(inventoryId)
-
-            val result = inventoryGoods.map { BalanceDiffItemModel(
+            val shopDbName = shopService.getSelectShop().dbName
+            val items = invnetoryGroupingDao.getCountBalanceAndInventory(inventoryId, shopDbName)
+            balance.postValue(items.map { BalanceDiffItemModel(
                 it.goodId,
-                goods.find { g-> it.goodId==g.id }!!.name,
-                it.countFact,
-                _balance.firstOrNull{b->it.goodId==b.goodId}?.Balance ?: BigDecimal(0)
-            ) }
-            if(_balance.count()>inventoryGoods.count())
-                result.plus(_balance
-                    .filter { !result.any{r->r.goodId==it.goodId} }
-                    .map { BalanceDiffItemModel(
-                        it.goodId,
-                        goods.find { g-> it.goodId==g.id }!!.name,
-                        BigDecimal(0),
-                        it.Balance
-                    ) }
-                )
-
-            balance.postValue(result.filter { it.countFact!=it.countFromServer })
+                it.name,
+                it.inventoryCount,
+                it.balanceCount
+            ) })
+            isLoadingState.postValue(true)
         }
     }
 }

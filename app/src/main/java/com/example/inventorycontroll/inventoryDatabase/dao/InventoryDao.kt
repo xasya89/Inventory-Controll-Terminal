@@ -15,6 +15,8 @@ import com.example.inventorycontroll.ui.inventoryEditor.models.InventoryPosition
 interface InventoryDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertInventory(inventory: Inventory): Long
+    @Query("UPDATE inventories SET isCancel=1 WHERE isStop=0 AND shopDbName=:shopDbName")
+    fun canceledActiveInventory(shopDbName: String)
     @Update()
     fun  updateInventory(inventory: Inventory)
     @Query("SELECT * FROM inventories WHERE id=:id LIMIT 1")

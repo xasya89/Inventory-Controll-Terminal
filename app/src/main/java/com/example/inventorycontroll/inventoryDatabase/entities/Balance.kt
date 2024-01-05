@@ -10,5 +10,5 @@ data class Balance(
     val id: Long,
     val goodId:Long,
     val shopDbName: String,
-    val Balance: BigDecimal
+    val balanceCount: BigDecimal
 )
