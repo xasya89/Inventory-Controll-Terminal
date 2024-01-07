@@ -21,6 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.inventorycontroll.R
+import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.databinding.FragmentInventoryEditorBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
@@ -36,6 +37,7 @@ class InventoryEditorFragment : Fragment() {
 
     private lateinit var binding: FragmentInventoryEditorBinding
     private val vm by activityViewModels<InventoryEditorViewModel>()
+    private val shopViewModel by activityViewModels<ShopViewModel>()
     private val rcAdapter=PositionRecycleViewAdapter({goodId, newCount -> vm.changeCountInPosition(goodId, newCount)})
 
     private lateinit var spinnerGroups: SpinnerGroups
@@ -91,7 +93,14 @@ class InventoryEditorFragment : Fragment() {
         vm.isSaveState.observe(viewLifecycleOwner,{
             binding.inventoryEditorPositionsSave.visibility = if(it==true) View.VISIBLE else View.GONE
         })
-
+/*
+        var firstIteration = true
+        shopViewModel.selectShop.observe(viewLifecycleOwner, {
+            if(!firstIteration)
+                findNavController().navigate(R.id.nav_inventory_loading)
+            firstIteration = false
+        } )
+*/
         initClipboardService()
     }
 

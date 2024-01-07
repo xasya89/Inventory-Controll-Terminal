@@ -13,14 +13,18 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
 import com.example.inventorycontroll.R
+import com.example.inventorycontroll.common.shopService.ShopService
+import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.databinding.FragmentInventoryLoadingBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class InventoryLoadingFragment : Fragment() {
     private lateinit var binding: FragmentInventoryLoadingBinding
     private val vm by activityViewModels<InventoryEditorViewModel>()
+    @Inject lateinit var shopService: ShopService
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -48,6 +52,7 @@ class InventoryLoadingFragment : Fragment() {
         vm.getInventory()
         vm.inventory.observe(viewLifecycleOwner, {
             binding.inventoryLoaderOpenBtn.visibility = if(it==null) View.GONE else View.VISIBLE
+            binding.inventoryLoaderTitle.text = (if(it==null) "Создать новую инвенторизацию на " else "Продолжить инвенторизацию на ") + shopService.selectShop?.name
         })
     }
 

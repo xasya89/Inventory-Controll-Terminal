@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import com.example.inventorycontroll.common.shopService.ShopService
+import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.communication.BalanceApiService
 import com.example.inventorycontroll.communication.InventoryApiService
 import com.example.inventorycontroll.communication.model.InventoryGoodModelApi
@@ -38,7 +39,7 @@ class InventoryEditorViewModel @Inject constructor(
     private val goodsDao: GoodDao,
     private val barcodeDao: BarcodeDao,
     private val balanceDao: BalanceDao,
-    private val shopService: ShopService,
+    val shopService: ShopService,
     private val inventoryApi: InventoryApiService,
     private val balanceApiService: BalanceApiService
 ): ViewModel() {
@@ -49,8 +50,9 @@ class InventoryEditorViewModel @Inject constructor(
     val isSaveState = MutableLiveData<Boolean>(false)
 
     fun getInventory(){
-        viewModelScope.launch(Dispatchers.IO) {
-            val result = dao.getExistInventory(shopService.getSelectShop().dbName).firstOrNull()
+        val selectDbName = shopService.selectShop!!.dbName
+        viewModelScope.launch(getCoroutineExceptionHandler() + Dispatchers.IO) {
+            val result = dao.getExistInventory(selectDbName).firstOrNull()
             inventory.postValue(result)
             if(result!=null){
                 var _groups = dao.getGroups(result.id)
@@ -64,13 +66,13 @@ class InventoryEditorViewModel @Inject constructor(
     }
 
     fun createIncentory(money: BigDecimal, onSuccess: ()->Unit){
-        viewModelScope.launch(Dispatchers.IO) {
+        val selectDbName = shopService.selectShop!!.dbName
+        viewModelScope.launch(getCoroutineExceptionHandler() + Dispatchers.IO) {
             if(inventory.value!=null){
                 inventory.value?.isCancel=true
             }
-            val shopDbName = shopService.getSelectShop().dbName
-            dao.canceledActiveInventory(shopDbName)
-            var id = dao.insertInventory(Inventory(0, Date(), shopService.getSelectShop().dbName, money))
+            dao.canceledActiveInventory(selectDbName)
+            var id = dao.insertInventory(Inventory(0, Date(), selectDbName, money))
             val newInventory = dao.getInventoryById(id)
             inventory.postValue(newInventory)
             var groupId = dao.insertGroup(InventoryGroup(0, id, "Группа 1", BigDecimal(0)))
@@ -79,7 +81,7 @@ class InventoryEditorViewModel @Inject constructor(
             selectGroup.postValue(_groups.firstOrNull())
             positions.postValue(listOf())
 
-            SynchBalance(shopService.getSelectShop().dbName, balanceApiService, balanceDao, goodsDao).synch()
+            SynchBalance(selectDbName, balanceApiService, balanceDao, goodsDao).synch()
 
             viewModelScope.launch(Dispatchers.Main) { onSuccess.invoke() }
         }
@@ -87,7 +89,7 @@ class InventoryEditorViewModel @Inject constructor(
 
     fun addGroup(groupName: String){
         if(isSaveState.value==true) return
-        viewModelScope.launch (Dispatchers.IO){
+        viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
             val newGroup = InventoryGroup(0, inventory.value!!.id, groupName, BigDecimal(0))
             val id = dao.insertGroup(newGroup)
             newGroup.id = id
@@ -101,7 +103,7 @@ class InventoryEditorViewModel @Inject constructor(
     fun changeSelectGroup(group: InventoryGroup){
         if(selectGroup.value==group) return
         selectGroup.value = group
-        viewModelScope.launch (Dispatchers.IO){
+        viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
             val result = dao.getGoods(group.id)
             positions.postValue(result)
         }
@@ -109,8 +111,9 @@ class InventoryEditorViewModel @Inject constructor(
 
 
     fun getGood(barcode: String, onFind: (good: Good)->Unit){
-        viewModelScope.launch (Dispatchers.IO) {
-            val good = barcodeDao.getGoodByBarcode(shopService.getSelectShop().dbName, barcode).firstOrNull()
+        val selectDbName = shopService.selectShop!!.dbName
+        viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO) {
+            val good = barcodeDao.getGoodByBarcode(selectDbName, barcode).firstOrNull()
                 ?: return@launch
             viewModelScope.launch(Dispatchers.Main) {
                 onFind.invoke(good)
@@ -154,7 +157,7 @@ class InventoryEditorViewModel @Inject constructor(
     }
 
     fun addPositions(goods: List<FindGoodModel>){
-        viewModelScope.launch (Dispatchers.Main){
+        viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.Main){
             val list = mutableListOf<InventoryPositionModel>()
             goods.forEach { good->
                 val position = positions.value?.find { it.goodId==good.id }
@@ -167,7 +170,7 @@ class InventoryEditorViewModel @Inject constructor(
     }
 
     fun savePositions(){
-        viewModelScope.launch (Dispatchers.IO){
+        viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
             _savePositions()
         }
     }
@@ -207,10 +210,11 @@ class InventoryEditorViewModel @Inject constructor(
     }
 
     fun send(onSuccess: () -> Unit){
+        val selectDbName = shopService.selectShop!!.dbName
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
             _savePositions()
             val _inventory = inventory.value!!
-            val goodsDb = goodsDao.getGoods(shopService.getSelectShop().dbName)
+            val goodsDb = goodsDao.getGoods(selectDbName)
             val groups = dao.getGroupsWithGoods(_inventory.id).map {
                 InvnetoryGroupModelApi(
                     it.group.groupName,
@@ -223,7 +227,7 @@ class InventoryEditorViewModel @Inject constructor(
                     }
                 )
             }
-            inventoryApi.SendInventory(shopService.getSelectShop().dbName, InventoryModelApi(
+            inventoryApi.SendInventory(selectDbName, InventoryModelApi(
                 UUID.randomUUID().toString(),
                 inventory.value!!.dateCreate,
                 inventory.value!!.startCashMoney,
@@ -240,7 +244,7 @@ class InventoryEditorViewModel @Inject constructor(
 
     private fun getCoroutineExceptionHandler(): CoroutineExceptionHandler {
         return CoroutineExceptionHandler { context, throwable ->
-            Log.e("error", throwable.message.toString())
+            Log.e(this.toString(), throwable.message.toString())
         }
     }
 }

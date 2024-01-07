@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inventorycontroll.common.shopService.ShopService
+import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.communication.GoodsApiService
 import com.example.inventorycontroll.communication.model.BarcodeModelApi
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
@@ -14,6 +15,7 @@ import com.example.inventorycontroll.inventoryDatabase.entities.GoodUnit
 import com.example.inventorycontroll.inventoryDatabase.entities.SpecilType
 import com.example.inventorycontroll.inventoryDatabase.repositories.GoodsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,27 +24,26 @@ import javax.inject.Inject
 class SynchronizationViewModel @Inject constructor(
     private val dao: GoodDao,
     private val api: GoodsApiService,
-    private val shopService: ShopService
+    val shopService: ShopService
 ): ViewModel() {
-
     val compliteSynchronization = MutableLiveData<Boolean>(false)
 
     fun synchronization(){
-        viewModelScope.launch (Dispatchers.IO) {
-            val shopDbName = shopService.getSelectShop().dbName
+        val selectDbName = shopService.selectShop!!.dbName
+        viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO) {
             var goodsDb = dao.getGoodsWithBarcodes()
 
             var _skip = 0
-            val countGoods = api.getGoods( shopDbName,0, 1).count
+            val countGoods = api.getGoods( selectDbName,0, 1).count
             do {
-                var goods = api.getGoods(shopDbName, _skip, 200).goods
+                var goods = api.getGoods(selectDbName, _skip, 200).goods
                 goods.forEach { g->
                     val goodDb= goodsDb.firstOrNull { it.good.uuid == g.uuid }
                     if(goodDb==null) {
                         val id = dao.insertGood(
                             Good(
                                 id = 0,
-                                shopDbName,
+                                selectDbName,
                                 uuid = g.uuid,
                                 name = g.name,
                                 unit = GoodUnit.PCE,
@@ -74,6 +75,12 @@ class SynchronizationViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.d("barcode added exception", b.code)
             }
+        }
+    }
+
+    private fun getCoroutineExceptionHandler(): CoroutineExceptionHandler {
+        return CoroutineExceptionHandler { context, throwable ->
+            Log.e(this.toString(), throwable.message.toString())
         }
     }
 }
