@@ -1,22 +1,27 @@
 package com.example.inventorycontroll.ui.inventoryEditor
 
 import android.app.AlertDialog
-import android.app.Dialog
-import android.content.DialogInterface
+import android.content.ClipboardManager
+import android.content.Context
 import android.os.Bundle
+import android.text.Editable
 import android.text.InputType
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.core.content.getSystemService
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.inventorycontroll.R
-import com.example.inventorycontroll.common.viewModels.KeyListenerViewModel
+import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.databinding.FragmentInventoryEditorBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
@@ -24,16 +29,16 @@ import com.example.inventorycontroll.ui.inventoryEditor.adapters.PositionRecycle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
 import java.math.BigDecimal
+
 
 @AndroidEntryPoint
 class InventoryEditorFragment : Fragment() {
 
     private lateinit var binding: FragmentInventoryEditorBinding
-    private val keyListenerVm by activityViewModels<KeyListenerViewModel> ()
-    private val vm by viewModels<InventoryEditorViewModel>()
-    private lateinit var rcAdapter: PositionRecycleViewAdapter
+    private val vm by activityViewModels<InventoryEditorViewModel>()
+    private val shopViewModel by activityViewModels<ShopViewModel>()
+    private val rcAdapter=PositionRecycleViewAdapter({goodId, newCount -> vm.changeCountInPosition(goodId, newCount)})
 
     private lateinit var spinnerGroups: SpinnerGroups
 
@@ -42,62 +47,89 @@ class InventoryEditorFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentInventoryEditorBinding.inflate(inflater)
-        initRecycleView()
+        with(binding){
+            inventoryEditorRc.layoutManager = LinearLayoutManager(context)
+            inventoryEditorRc.adapter= rcAdapter
+            inventoryEditorSearchBtn.setOnClickListener {
+                findNavController().navigate(R.id.findGoodFragment)
+            }
+
+            spinnerGroups = SpinnerGroups(requireContext(), inventoryEditorGroupSelectList, {
+                vm.changeSelectGroup(it)
+            })
+
+            binding.inventoryEditorAddGroupBtn.setOnClickListener {
+                showDialog("Название группы","",false, {
+                    vm.addGroup(it)
+                })
+            }
+
+            binding.inventoryEditorPositionsSave.setOnClickListener {
+                vm.savePositions()
+            }
+        }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        keyListenerVm.findGood.observe(viewLifecycleOwner, {good->
-            if(good!=null)
-                showDialog(good.name, true, {
-                    if(it=="") return@showDialog
-                    val count = BigDecimal(it)
-                    vm.addPosition(good, count)
-                })
+        vm.groups.observe(viewLifecycleOwner, {
+            if(it!=null)
+                spinnerGroups.setGroups(it)
         })
-        spinnerGroups = SpinnerGroups(requireContext(), binding.inventoryEditorGroupSelectList, {})
-
-        init()
-        binding.inventoryEditorAddGroupBtn.setOnClickListener {
-            showDialog("Название группы",false, {
-                vm.addGroup(it, {
-                    spinnerGroups.setGroups(vm.getGroups())
-                })
-            })
-        }
+        vm.selectGroup.observe(viewLifecycleOwner,{
+            if(it==null){
+                binding.inventoryEditorGroupSelectList.setSelection(-1)
+                return@observe
+            }
+            val pos = vm.groups.value!!.indexOf(it)
+            binding.inventoryEditorGroupSelectList.setSelection(pos)
+        })
 
         vm.positions.observe(viewLifecycleOwner, {
-            rcAdapter.addList(it)
+            rcAdapter.setPositions(it)
         })
+
+        vm.isSaveState.observe(viewLifecycleOwner,{
+            binding.inventoryEditorPositionsSave.visibility = if(it==true) View.VISIBLE else View.GONE
+        })
+/*
+        var firstIteration = true
+        shopViewModel.selectShop.observe(viewLifecycleOwner, {
+            if(!firstIteration)
+                findNavController().navigate(R.id.nav_inventory_loading)
+            firstIteration = false
+        } )
+*/
+        initClipboardService()
     }
 
-    private fun  init(){
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            if(vm.getExistInventory()!=null) {
-                viewLifecycleOwner.lifecycleScope.launch (Dispatchers.Main){
-                    spinnerGroups.setGroups(vm.getGroups())
-                }
-                return@launch
-            }
-            viewLifecycleOwner.lifecycleScope.launch (Dispatchers.Main){
-                showDialog("В кассе", true, {
-                    val count = BigDecimal(it)
-                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        vm.createInventory(count)
-                    }
-                })
-            }
+    private fun initClipboardService(){
+        val cm = requireContext().getSystemService<ClipboardManager>()
+        cm!!.addPrimaryClipChangedListener {
+            val clip = cm.primaryClip!!.getItemAt(0)
+            val barcode = clip.text.toString()
+                if(barcode=="") return@addPrimaryClipChangedListener
+            vm.getGood(barcode, {good->
+                val position = vm.positions.value?.find { it.goodId==good.id }
+                if(position==null)
+                    showDialog(good.name, "",true, {
+                        if(it=="") return@showDialog
+                        val count = BigDecimal(it)
+                        vm.addPosition(good, count)
+                    })
+                else
+                    showDialog(good.name, position.count.toString(),true, {
+                        if(it=="") return@showDialog
+                        val count = BigDecimal(it)
+                        vm.addPosition(good, count)
+                    })
+            })
         }
     }
 
-    private fun initRecycleView() = with(binding){
-        inventoryEditorRc.layoutManager = LinearLayoutManager(context)
-        rcAdapter = PositionRecycleViewAdapter()
-        inventoryEditorRc.adapter= rcAdapter
-    }
 
-    private fun showDialog(title:String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){
+    private fun showDialog(title:String, prevValue: String, isNumericInputType: Boolean = false, callBackOk:((text: String) -> Unit)? = null, callBackCancel: (()->Unit)? = null){
         val builder = AlertDialog.Builder(context)
         val inflater = layoutInflater
         val dialogBinding = InputTextDialogBinding.inflate(inflater)
@@ -106,9 +138,10 @@ class InventoryEditorFragment : Fragment() {
 
         dialogBinding.inputDialogCount.isFocusableInTouchMode=true
         dialogBinding.inputDialogCount.requestFocus()
+        dialogBinding.inputDialogCount.text = Editable.Factory().newEditable(prevValue)
         with(builder){
             dialogBinding.inputDialogCount.requestFocus()
-            setTitle(title)
+            dialogBinding.textView2.text = title
             setView(dialogBinding.root)
         }
         val alertDialog = builder.create()

@@ -41,10 +41,11 @@ class KeyListenerViewModel @Inject constructor(private val barcodeDao: BarcodeDa
                 viewModelScope.launch (Dispatchers.IO){
                     Log.d("barcode",_barcode)
                     if(_barcode=="") return@launch
-                    val good = barcodeDao.getGoodByBarcode(shopService.getSelectShop().dbName, _barcode).firstOrNull()
+                    val good = barcodeDao.getGoodByBarcode(shopService.selectShop!!.dbName, _barcode).firstOrNull()
                     findGood.postValue(good)
                     barcode.postValue(_barcode)
                     _barcode=""
+                    isScanActive = false
                 }
             }
             /*

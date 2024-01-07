@@ -3,6 +3,7 @@ package com.example.inventorycontroll.di.dataModules
 import android.content.Context
 import androidx.room.Room
 import com.example.inventorycontroll.inventoryDatabase.InventoryDatabase
+import com.example.inventorycontroll.inventoryDatabase.MIGRATION_1_2
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,7 +23,8 @@ object DtabaseModule {
         context,
         InventoryDatabase::class.java,
         "inventory-database"
-    ).build()
+    )
+        .build()
 
     @Singleton
     @Provides
@@ -35,4 +37,12 @@ object DtabaseModule {
     @Singleton
     @Provides
     fun providerInventoryDao(db: InventoryDatabase) = db.inventoryDao()
+
+    @Singleton
+    @Provides
+    fun providerBalance(db: InventoryDatabase) = db.balanceDao()
+
+    @Singleton
+    @Provides
+    fun providerInventoryGroupingDao(db: InventoryDatabase) = db.inventoryGroupingDao()
 }

@@ -11,7 +11,8 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ServicesModule {
+
     @Singleton
     @Provides
-    fun providerShopService(api: ShopApiService): ShopService = ShopService(api)
+    fun providerShopServer() = ShopService()
 }
