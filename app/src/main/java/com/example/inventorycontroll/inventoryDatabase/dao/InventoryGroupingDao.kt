@@ -20,7 +20,7 @@ interface InventoryGroupingDao {
             "    ( " +
             "    SELECT b.goodId, IFNULL(t1.inventoryCount, 0) AS inventoryCount, b.balanceCount FROM " +
             "    (SELECT goodId, balanceCount FROM balance WHERE shopDbName=:shopDbName) b " +
-            "    LEFT JOIN (SELECT g.goodId, COUNT(g.count) AS inventoryCount FROM inventorygroups gr INNER JOIN inventorygoods g ON gr.id=g.groupId WHERE gr.inventoryId=:inventoryId GROUP BY g.goodId) t1 " +
+            "    LEFT JOIN (SELECT g.goodId, SUM(g.count) AS inventoryCount FROM inventorygroups gr INNER JOIN inventorygoods g ON gr.id=g.groupId WHERE gr.inventoryId=:inventoryId GROUP BY g.goodId) t1 " +
             "    ON b.goodId=t1.goodId " +
             "    WHERE IFNULL(t1.inventoryCount, 0)<>b.balanceCount " +
             "    ) t2 " +

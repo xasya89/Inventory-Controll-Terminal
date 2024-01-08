@@ -31,7 +31,7 @@ class SynchronizationViewModel @Inject constructor(
     fun synchronization(){
         val selectDbName = shopService.selectShop!!.dbName
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO) {
-            var goodsDb = dao.getGoodsWithBarcodes()
+            var goodsDb = dao.getGoodsWithBarcodes(selectDbName)
 
             var _skip = 0
             val countGoods = api.getGoods( selectDbName,0, 1).count

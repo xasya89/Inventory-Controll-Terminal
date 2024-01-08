@@ -21,6 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.inventorycontroll.R
+import com.example.inventorycontroll.common.viewModels.KeyListenerViewModel
 import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.databinding.FragmentInventoryEditorBinding
 import com.example.inventorycontroll.databinding.InputTextDialogBinding
@@ -38,6 +39,7 @@ class InventoryEditorFragment : Fragment() {
     private lateinit var binding: FragmentInventoryEditorBinding
     private val vm by activityViewModels<InventoryEditorViewModel>()
     private val shopViewModel by activityViewModels<ShopViewModel>()
+    private val keyListenerViewModel by activityViewModels<KeyListenerViewModel>()
     private val rcAdapter=PositionRecycleViewAdapter({goodId, newCount -> vm.changeCountInPosition(goodId, newCount)})
 
     private lateinit var spinnerGroups: SpinnerGroups
@@ -101,31 +103,24 @@ class InventoryEditorFragment : Fragment() {
             firstIteration = false
         } )
 */
-        initClipboardService()
-    }
+        keyListenerViewModel.findGood.value = null
+        keyListenerViewModel.findGood.observe(viewLifecycleOwner, {good ->
+            if(good==null) return@observe
 
-    private fun initClipboardService(){
-        val cm = requireContext().getSystemService<ClipboardManager>()
-        cm!!.addPrimaryClipChangedListener {
-            val clip = cm.primaryClip!!.getItemAt(0)
-            val barcode = clip.text.toString()
-                if(barcode=="") return@addPrimaryClipChangedListener
-            vm.getGood(barcode, {good->
-                val position = vm.positions.value?.find { it.goodId==good.id }
-                if(position==null)
-                    showDialog(good.name, "",true, {
-                        if(it=="") return@showDialog
-                        val count = BigDecimal(it)
-                        vm.addPosition(good, count)
-                    })
-                else
-                    showDialog(good.name, position.count.toString(),true, {
-                        if(it=="") return@showDialog
-                        val count = BigDecimal(it)
-                        vm.addPosition(good, count)
-                    })
-            })
-        }
+            val position = vm.positions.value?.find { it.goodId==good.id }
+            if(position==null)
+                showDialog(good.name, "",true, {
+                    if(it=="") return@showDialog
+                    val count = BigDecimal(it)
+                    vm.addPosition(good, count)
+                })
+            else
+                showDialog(good.name, position.count.toString(),true, {
+                    if(it=="") return@showDialog
+                    val count = BigDecimal(it)
+                    vm.addPosition(good, count)
+                })
+        })
     }
 
 

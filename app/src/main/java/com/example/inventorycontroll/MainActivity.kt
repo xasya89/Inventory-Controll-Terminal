@@ -1,5 +1,6 @@
 package com.example.inventorycontroll
 
+import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -12,6 +13,7 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.getSystemService
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.NavOptions
 import androidx.navigation.Navigation
@@ -27,6 +29,7 @@ import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationView
 import dagger.hilt.android.AndroidEntryPoint
+import java.math.BigDecimal
 import javax.inject.Inject
 
 
@@ -38,6 +41,8 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var shopService: ShopService
     private val shopViewModel by viewModels<ShopViewModel>()
     private val keyListenerVm by viewModels<KeyListenerViewModel>()
+    private lateinit var shopsAdapter: ArrayAdapter<String>
+    private var clipboardManager: ClipboardManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,8 +55,6 @@ class MainActivity : AppCompatActivity() {
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow, R.id.nav_inventory_loading, R.id.nav_synchronization
@@ -60,34 +63,44 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        shopsAdapter = ArrayAdapter<String>(this@MainActivity, com.google.android.material.R.layout.support_simple_spinner_dropdown_item)
+        val spinner = binding.navView.getHeaderView(0) .findViewById<Spinner>(R.id.selectShopSpinner)
+        spinner.adapter = shopsAdapter
+        spinner.onItemSelectedListener = object :AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
+                shopViewModel.setSelectShop(shopViewModel.shops.value?.get(p2)!!)
+                val navController = Navigation.findNavController(this@MainActivity, R.id.nav_host_fragment_content_main)
+                val dest = navController.currentDestination
+                when(dest!!.id){
+                    R.id.nav_inventory_loading -> navController.navigate(R.id.nav_home)
+                    R.id.nav_host_fragment_content_main -> navController.navigate(R.id.nav_inventory_loading)
+                    R.id.findGoodFragment -> navController.navigate(R.id.nav_inventory_loading)
+                    R.id.nav_synchronization -> navController.navigate(R.id.nav_home)
+                }
+            }
+
+            override fun onNothingSelected(p0: AdapterView<*>?) {
+            }
+
+        }
+
+        clipboardManager = this.getSystemService<ClipboardManager>()
+        clipboardManager?.addPrimaryClipChangedListener {
+            val clip = clipboardManager!!.primaryClip!!.getItemAt(0)
+            val barcode = clip.text.toString()
+            if (barcode == "") return@addPrimaryClipChangedListener
+            keyListenerVm.findGood(barcode)
+        }
     }
 
     override fun onStart() {
         super.onStart()
-
-        shopViewModel.getShops()
         shopViewModel.shops.observe(this, {
-            val spinner = binding.navView.getHeaderView(0) .findViewById<Spinner>(R.id.selectShopSpinner)
+            if(shopViewModel.isFirstLoading.value!=true) return@observe
+
             val items = it.map { it.name }
-            val adapter = ArrayAdapter<String>(this@MainActivity, com.google.android.material.R.layout.support_simple_spinner_dropdown_item, items)
-            spinner.adapter = adapter
-            spinner.onItemSelectedListener = object :AdapterView.OnItemSelectedListener{
-                override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                    shopViewModel.setSelectShop(shopViewModel.shops.value?.get(p2)!!)
-                    val navController = Navigation.findNavController(this@MainActivity, R.id.nav_host_fragment_content_main)
-                    val dest = navController.currentDestination
-                    when(dest!!.id){
-                        R.id.nav_inventory_loading -> navController.navigate(R.id.nav_home)
-                        R.id.nav_host_fragment_content_main -> navController.navigate(R.id.nav_inventory_loading)
-                        R.id.findGoodFragment -> navController.navigate(R.id.nav_inventory_loading)
-                        R.id.nav_synchronization -> navController.navigate(R.id.nav_home)
-                    }
-                }
-
-                override fun onNothingSelected(p0: AdapterView<*>?) {
-                }
-
-            }
+            shopsAdapter.clear()
+            shopsAdapter.addAll(items)
         } )
     }
 

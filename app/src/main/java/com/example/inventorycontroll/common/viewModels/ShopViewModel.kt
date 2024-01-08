@@ -20,12 +20,14 @@ class ShopViewModel @Inject constructor(
 ): ViewModel() {
     val shops = MutableLiveData<List<ShopModel>>(listOf())
     val selectShop = MutableLiveData<ShopModel>(null)
+    val isFirstLoading = MutableLiveData<Boolean>(true)
 
-    fun getShops(){
+    init {
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
             val list = shopApi.getShops()
             shops.postValue(list)
             shopService.selectShop = list.firstOrNull()
+            isFirstLoading.postValue(false)
         }
     }
 

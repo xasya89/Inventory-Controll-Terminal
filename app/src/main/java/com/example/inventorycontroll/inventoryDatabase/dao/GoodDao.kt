@@ -28,8 +28,8 @@ interface GoodDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertBarcode(barcode: Barcode): Long
 
-    @Query("DELETE FROM barcodes")
-    fun deleteAllBarcodes()
+    @Query("DELETE FROM barcodes WHERE goodId IN (SELECT id FROM goods WHERE shopDbName=:shopDbName)")
+    fun deleteAllBarcodes(shopDbName: String)
     @Delete
     fun deleteBarcode(barcode: Barcode)
     @Delete
@@ -41,6 +41,6 @@ interface GoodDao {
     @Query("SELECT * FROM goods WHERE name LIKE :findText AND shopDbName=:shopDbName")
     fun findGoods(shopDbName: String, findText: String): List<Good>
 
-    @Query("SELECT * FROM goods")
-    fun getGoodsWithBarcodes(): List<GoodWithBarcodes>
+    @Query("SELECT * FROM goods WHERE shopDbName=:shopDbName")
+    fun getGoodsWithBarcodes(shopDbName: String): List<GoodWithBarcodes>
 }

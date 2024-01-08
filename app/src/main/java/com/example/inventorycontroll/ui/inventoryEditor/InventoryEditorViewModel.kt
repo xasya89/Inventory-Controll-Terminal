@@ -4,6 +4,7 @@ import android.provider.ContactsContract.Groups
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.liveData
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import com.example.inventorycontroll.common.shopService.ShopService
@@ -119,6 +120,13 @@ class InventoryEditorViewModel @Inject constructor(
                 onFind.invoke(good)
             }
         }
+    }
+
+    fun getGood(barcode: String) = liveData<Good>(getCoroutineExceptionHandler() + Dispatchers.IO){
+        val selectDbName = shopService.selectShop!!.dbName
+        val good = barcodeDao.getGoodByBarcode(selectDbName, barcode).firstOrNull()
+            ?: return@liveData
+        emit(good)
     }
 
     fun addPosition(good: Good, count: BigDecimal) {

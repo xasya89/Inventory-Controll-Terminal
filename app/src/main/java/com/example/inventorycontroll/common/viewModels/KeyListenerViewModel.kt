@@ -11,6 +11,7 @@ import com.example.inventorycontroll.inventoryDatabase.dao.BarcodeDao
 import com.example.inventorycontroll.inventoryDatabase.entities.Good
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.scopes.ViewModelScoped
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -48,33 +49,21 @@ class KeyListenerViewModel @Inject constructor(private val barcodeDao: BarcodeDa
                     isScanActive = false
                 }
             }
-            /*
-            Log.d("barcode", key.keyCode.toString() + " " + KeyEvent.KEYCODE_8.toString() + " " + KeyEvent.KEYCODE_NUMPAD_8.toString())
-            when (key?.keyCode){
-                KeyEvent.KEYCODE_0 -> _barcode = _barcode + "0"
-                KeyEvent.KEYCODE_NUMPAD_0 -> _barcode = _barcode + "0"
-                KeyEvent.KEYCODE_1 -> _barcode = _barcode + "1"
-                KeyEvent.KEYCODE_2 -> _barcode = _barcode + "2"
-                KeyEvent.KEYCODE_3 -> _barcode = _barcode + "3"
-                KeyEvent.KEYCODE_4 -> _barcode = _barcode + "4"
-                KeyEvent.KEYCODE_5 -> _barcode = _barcode + "5"
-                KeyEvent.KEYCODE_6 -> _barcode = _barcode + "6"
-                KeyEvent.KEYCODE_7 -> _barcode = _barcode + "7"
-                KeyEvent.KEYCODE_8 -> _barcode = _barcode + "8"
-                KeyEvent.KEYCODE_NUMPAD_8 -> _barcode = _barcode + "8"
-                KeyEvent.KEYCODE_9 -> _barcode = _barcode + "9"
-                KeyEvent.KEYCODE_N -> _barcode = _barcode + "N"
-                KeyEvent.KEYCODE_E -> _barcode = _barcode + "E"
-                KeyEvent.KEYCODE_ENTER -> {
-                    barcode.value = _barcode
-                    viewModelScope.launch (Dispatchers.IO){
-                        if(barcode.value=="") return@launch
-                        val good = barcodeDao.getGoodByBarcode(shopService.getSelectShop().dbName, barcode.value!!).firstOrNull()
-                        findGood.postValue(good)
-                    }
-                    _barcode = ""
-                }
-            }*/
+        }
+    }
+
+    fun findGood(barcode: String){
+        viewModelScope.launch (Dispatchers.IO + getCoroutineExceptionHandler()){
+            val selectDbName = shopService.selectShop!!.dbName
+            val good = barcodeDao.getGoodByBarcode(selectDbName, barcode).firstOrNull()
+                ?: return@launch
+            findGood.postValue(good)
+        }
+    }
+
+    private fun getCoroutineExceptionHandler(): CoroutineExceptionHandler {
+        return CoroutineExceptionHandler { context, throwable ->
+            Log.e(this.toString(), throwable.message.toString())
         }
     }
 }
