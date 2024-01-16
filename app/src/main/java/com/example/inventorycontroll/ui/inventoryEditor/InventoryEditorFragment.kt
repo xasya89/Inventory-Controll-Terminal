@@ -107,6 +107,12 @@ class InventoryEditorFragment : Fragment() {
         keyListenerViewModel.findGood.observe(viewLifecycleOwner, {good ->
             if(good==null) return@observe
 
+            showDialog(good.name, "",true, {
+                if(it=="") return@showDialog
+                val count = BigDecimal(it)
+                vm.addPosition(good, count)
+            })
+            /*
             val position = vm.positions.value?.find { it.goodId==good.id }
             if(position==null)
                 showDialog(good.name, "",true, {
@@ -120,6 +126,7 @@ class InventoryEditorFragment : Fragment() {
                     val count = BigDecimal(it)
                     vm.addPosition(good, count)
                 })
+             */
         })
     }
 

@@ -132,6 +132,14 @@ class InventoryEditorViewModel @Inject constructor(
     fun addPosition(good: Good, count: BigDecimal) {
         val groupId = selectGroup.value?.id
         if(groupId==null) return
+
+        positions.postValue(
+            positions.value?.plus(
+                InventoryPositionModel(0, groupId, good.id, good.name, good.price, count)
+            )
+        )
+        onChangeSum(BigDecimal(0), count, good.price)
+        /*
         val position = positions.value?.find { it.goodId == good.id }
         if (position == null)
             positions.postValue(
@@ -146,8 +154,8 @@ class InventoryEditorViewModel @Inject constructor(
                 return@map it
             })
         }
-
         onChangeSum(position?.count, count, good.price)
+         */
         isSaveState.postValue(true)
     }
 
@@ -166,6 +174,7 @@ class InventoryEditorViewModel @Inject constructor(
 
     fun addPositions(goods: List<FindGoodModel>){
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.Main){
+            /*
             val list = mutableListOf<InventoryPositionModel>()
             goods.forEach { good->
                 val position = positions.value?.find { it.goodId==good.id }
@@ -173,6 +182,11 @@ class InventoryEditorViewModel @Inject constructor(
             }
             list.addAll(positions.value!!)
             positions.postValue(list)
+            */
+            positions.postValue(goods.map {
+                InventoryPositionModel(0, selectGroup.value!!.id, it.id, it.name, it.price, BigDecimal(0) )
+            })
+
             isSaveState.postValue(true)
         }
     }
