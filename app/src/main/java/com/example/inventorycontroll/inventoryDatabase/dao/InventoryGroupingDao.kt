@@ -16,7 +16,7 @@ interface InventoryGroupingDao {
             "ON t1.goodId=b.goodId " +
             "WHERE IFNULL(t1.inventoryCount, 0)<>b.balanceCount ")
     */
-    @Query("SELECT g.name, t2.* FROM " +
+    @Query("SELECT g.name, g.groupId, t2.* FROM " +
             "    ( " +
             "    SELECT b.goodId, IFNULL(t1.inventoryCount, 0) AS inventoryCount, b.balanceCount FROM " +
             "    (SELECT goodId, balanceCount FROM balance WHERE shopDbName=:shopDbName) b " +

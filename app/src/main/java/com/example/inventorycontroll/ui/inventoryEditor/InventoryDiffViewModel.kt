@@ -10,6 +10,7 @@ import com.example.inventorycontroll.common.viewModels.ShopViewModel
 import com.example.inventorycontroll.communication.BalanceApiService
 import com.example.inventorycontroll.inventoryDatabase.dao.BalanceDao
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
+import com.example.inventorycontroll.inventoryDatabase.dao.GoodGroupDao
 import com.example.inventorycontroll.inventoryDatabase.dao.InventoryDao
 import com.example.inventorycontroll.inventoryDatabase.dao.InventoryGroupingDao
 import com.example.inventorycontroll.inventoryDatabase.entities.GoodGroup
@@ -25,17 +26,28 @@ import javax.inject.Inject
 @HiltViewModel
 class InventoryDiffViewModel @Inject constructor(
     private val shopService: ShopService,
-    private val invnetoryGroupingDao: InventoryGroupingDao
+    private val invnetoryGroupingDao: InventoryGroupingDao,
+    private val goodGroupsDao: GoodGroupDao
 ): ViewModel() {
     val balance = MutableLiveData<List<BalanceDiffItemModel>>(listOf())
     val isLoadingState = MutableLiveData<Boolean>(false)
+    val groups = MutableLiveData<List<GoodGroup>>(listOf())
     val selectGoodGroup = MutableLiveData<GoodGroup?>(null)
+
+    init {
+        viewModelScope.launch(Dispatchers.IO + getCoroutineExceptionHandler()) {
+            val dbName = shopService.selectShop!!.dbName
+            val _groups = goodGroupsDao.get(dbName)
+            groups.postValue(_groups)
+        }
+    }
 
     fun getDiff(inventoryId: Long){
         val dbName = shopService.selectShop!!.dbName
         isLoadingState.value = false
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
             val items = invnetoryGroupingDao.getCountBalanceAndInventory(inventoryId, dbName)
+                .filter { selectGoodGroup.value==null || it.groupId==selectGoodGroup.value?.id }
             balance.postValue(items.map { BalanceDiffItemModel(
                 it.goodId,
                 it.name,

@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.inventorycontroll.R
@@ -36,6 +37,7 @@ class InventoryDiffBalanceFragment() : Fragment() {
         binding.inventoryDiffRecycleView.layoutManager = LinearLayoutManager(context)
         binding.inventoryDiffRecycleView.adapter = adapter
         binding.inventoryDiffRecalcBtn.setOnClickListener { vm.getDiff(inventoryId!!) }
+        binding.inventoryDiffGroupSelectBtn.setOnClickListener { showPopup(it) }
         return binding.root
     }
 
@@ -49,6 +51,25 @@ class InventoryDiffBalanceFragment() : Fragment() {
             binding.inventoryDiffLoadingState.visibility = if(it) View.GONE else View.VISIBLE
             binding.inventoryDiffRecycleView.visibility = if(!it) View.GONE else View.VISIBLE
         })
+    }
+
+    private fun showPopup(view: View){
+        val popupMenu = PopupMenu(requireContext(), view)
+        vm.groups.observe(viewLifecycleOwner, {
+            it.forEach {
+                popupMenu.menu.add(it.name)
+                popupMenu.menu.add("")
+            }
+        })
+        popupMenu.setOnMenuItemClickListener {
+            val group = vm.groups.value?.firstOrNull{ gr->gr.name==it.title.toString() }
+            vm.selectGoodGroup.value = group
+            vm.getDiff(inventoryId!!)
+            return@setOnMenuItemClickListener true
+        }
+        popupMenu.setOnDismissListener {
+        }
+        popupMenu.show()
     }
 
     companion object {
