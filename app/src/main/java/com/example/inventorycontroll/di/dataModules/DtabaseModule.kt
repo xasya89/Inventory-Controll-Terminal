@@ -32,6 +32,10 @@ object DtabaseModule {
 
     @Singleton
     @Provides
+    fun providerGoodGroupsDao(db: InventoryDatabase) = db.goodGroupDao()
+
+    @Singleton
+    @Provides
     fun providerBarcodeDao(db: InventoryDatabase) = db.barcodeDao()
 
     @Singleton

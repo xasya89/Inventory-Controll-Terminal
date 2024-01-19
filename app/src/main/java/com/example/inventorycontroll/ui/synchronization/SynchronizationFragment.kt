@@ -37,12 +37,14 @@ class SynchronizationFragment : Fragment() {
 
     private fun initBining() = with(binding){
         startSynchronizationBtn.setOnClickListener {
-            startSynchronizationAnimation.visibility = View.VISIBLE
             vm.synchronization()
         }
         vm.compliteSynchronization.observe(viewLifecycleOwner,{
-            startSynchronizationAnimation.visibility = View.GONE
-            Toast.makeText(context, "Снихронизация завершена", Toast.LENGTH_LONG).show()
+            startSynchronizationAnimation.visibility = if(it) View.GONE else View.VISIBLE
+        })
+        vm.error.observe(viewLifecycleOwner,{
+            if(it!=null)
+                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
         })
     }
 

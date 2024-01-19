@@ -14,9 +14,12 @@ data class Good (
     @PrimaryKey(autoGenerate = true)
     val id:Long,
     val shopDbName: String,
+    val groupId: Long,
     val uuid: String,
     val name: String,
     val unit: GoodUnit,
     val specialType: SpecilType,
-    val price: BigDecimal
+    val price: BigDecimal,
+    val isDeleted: Boolean = false
+
 )

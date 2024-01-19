@@ -9,6 +9,7 @@ data class GoodResponseModelApi(
 )
 data class GoodModelApi(
     val uuid: String,
+    val goodGroupId: Long,
     val name: String,
     val specialType: Int,
     val unit: Int,

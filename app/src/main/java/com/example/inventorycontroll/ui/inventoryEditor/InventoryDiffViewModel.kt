@@ -12,6 +12,7 @@ import com.example.inventorycontroll.inventoryDatabase.dao.BalanceDao
 import com.example.inventorycontroll.inventoryDatabase.dao.GoodDao
 import com.example.inventorycontroll.inventoryDatabase.dao.InventoryDao
 import com.example.inventorycontroll.inventoryDatabase.dao.InventoryGroupingDao
+import com.example.inventorycontroll.inventoryDatabase.entities.GoodGroup
 import com.example.inventorycontroll.ui.inventoryEditor.bizLogic.SynchBalance
 import com.example.inventorycontroll.ui.inventoryEditor.models.BalanceDiffItemModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,8 @@ class InventoryDiffViewModel @Inject constructor(
 ): ViewModel() {
     val balance = MutableLiveData<List<BalanceDiffItemModel>>(listOf())
     val isLoadingState = MutableLiveData<Boolean>(false)
+    val selectGoodGroup = MutableLiveData<GoodGroup?>(null)
+
     fun getDiff(inventoryId: Long){
         val dbName = shopService.selectShop!!.dbName
         isLoadingState.value = false

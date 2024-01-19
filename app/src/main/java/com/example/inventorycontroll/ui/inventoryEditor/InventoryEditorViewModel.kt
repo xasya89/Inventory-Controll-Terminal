@@ -183,9 +183,11 @@ class InventoryEditorViewModel @Inject constructor(
             list.addAll(positions.value!!)
             positions.postValue(list)
             */
-            positions.postValue(goods.map {
+            val list = goods.map {
                 InventoryPositionModel(0, selectGroup.value!!.id, it.id, it.name, it.price, BigDecimal(0) )
-            })
+            }.toMutableList()
+            list.addAll(positions.value ?: listOf())
+            positions.postValue(list)
 
             isSaveState.postValue(true)
         }

@@ -1,6 +1,7 @@
 package com.example.inventorycontroll.di.dataModules
 
 import com.example.inventorycontroll.communication.BalanceApiService
+import com.example.inventorycontroll.communication.GoodGroupsApiService
 import com.example.inventorycontroll.communication.GoodsApiService
 import com.example.inventorycontroll.communication.InventoryApiService
 import com.example.inventorycontroll.communication.ShopApiService
@@ -42,6 +43,10 @@ object ApiModule {
     @Singleton
     @Provides
     fun providerGoodsApiService(retrofit: Retrofit): GoodsApiService = retrofit.create(GoodsApiService::class.java)
+
+    @Singleton
+    @Provides
+    fun providerGoodGroupsApiService(retrofit: Retrofit): GoodGroupsApiService = retrofit.create(GoodGroupsApiService::class.java)
 
     @Singleton
     @Provides

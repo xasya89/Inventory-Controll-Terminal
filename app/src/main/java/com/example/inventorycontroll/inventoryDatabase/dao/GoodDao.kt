@@ -16,8 +16,8 @@ import java.math.BigDecimal
 interface GoodDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertGood(good:Good): Long
-    @Query("UPDATE goods SET price=:price WHERE id=:id")
-    fun updateGood(id: Long, price: BigDecimal)
+    @Query("UPDATE goods SET groupId=:groupId, price=:price, isDeleted=:isDeleted WHERE id=:id")
+    fun updateGood(id: Long, groupId: Long, price: BigDecimal, isDeleted: Boolean)
 
     @Delete
     fun daleteGood(good: Good)
