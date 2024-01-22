@@ -26,6 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class InventoryDiffViewModel @Inject constructor(
     private val shopService: ShopService,
+    private val inventoryDao: InventoryDao,
     private val invnetoryGroupingDao: InventoryGroupingDao,
     private val goodGroupsDao: GoodGroupDao
 ): ViewModel() {
@@ -34,10 +35,13 @@ class InventoryDiffViewModel @Inject constructor(
     val isLoadingState = MutableLiveData<Boolean>(false)
     val groups = MutableLiveData<List<GoodGroup>>(listOf())
     val selectGoodGroup = MutableLiveData<GoodGroup?>(null)
+    val searchText = MutableLiveData<String>("")
 
     init {
         viewModelScope.launch(Dispatchers.IO + getCoroutineExceptionHandler()) {
             val dbName = shopService.selectShop!!.dbName
+            val inventory = inventoryDao.getExistInventory(dbName).first()
+            inventoryId.postValue(inventory.id)
             val _groups = goodGroupsDao.get(dbName)
             groups.postValue(_groups)
         }
@@ -47,8 +51,11 @@ class InventoryDiffViewModel @Inject constructor(
         val dbName = shopService.selectShop!!.dbName
         isLoadingState.value = false
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
-            val items = invnetoryGroupingDao.getCountBalanceAndInventory(inventoryId.value!!, dbName)
-                .filter { selectGoodGroup.value==null || it.groupId==selectGoodGroup.value?.id }
+            var items = invnetoryGroupingDao.getCountBalanceAndInventory(inventoryId.value!!, dbName)
+            if(selectGoodGroup.value!=null)
+                items = items.filter { it.groupId==selectGoodGroup.value?.id }
+            if(searchText.value!="")
+                items = items.filter { it.name.lowercase().indexOf(searchText.value!!)>-1 }
             balance.postValue(items.map { BalanceDiffItemModel(
                 it.goodId,
                 it.name,
@@ -57,6 +64,11 @@ class InventoryDiffViewModel @Inject constructor(
             ) })
             isLoadingState.postValue(true)
         }
+    }
+
+    fun searchTextChanged(search: String){
+        searchText.value = search
+        getDiff()
     }
 
     private fun getCoroutineExceptionHandler(): CoroutineExceptionHandler {

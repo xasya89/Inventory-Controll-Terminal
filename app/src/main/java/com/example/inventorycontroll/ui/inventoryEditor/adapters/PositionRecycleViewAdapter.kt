@@ -24,6 +24,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.util.UUID
 
 class PositionDiffUtillCallback(
     private val oldPositions: List<InventoryPositionModel>,
@@ -47,7 +48,7 @@ class PositionDiffUtillCallback(
 
 }
 
-class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->Unit):RecyclerView.Adapter<PositionRecycleViewAdapter.ViewHolder>() {
+class PositionRecycleViewAdapter(private val onChangeCount: (UUID, Long, BigDecimal)->Unit):RecyclerView.Adapter<PositionRecycleViewAdapter.ViewHolder>() {
 
     private var positions = listOf<InventoryPositionModel>()
 
@@ -67,7 +68,7 @@ class PositionRecycleViewAdapter(private val onChangeCount: (Long, BigDecimal)->
                 if (positionGoodCount.text.toString() == "") BigDecimal(0) else BigDecimal(
                     positionGoodCount.text.toString()
                 )
-            onChangeCount?.invoke(position.goodId, count)
+            onChangeCount?.invoke(position.uuid!!, position.goodId, count)
         }
 
         private fun hideKeyBoard() = with(binding){

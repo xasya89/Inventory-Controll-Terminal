@@ -60,7 +60,9 @@ class InventoryEditorViewModel @Inject constructor(
                 groups.postValue(_groups)
                 val group = _groups.firstOrNull()
                 selectGroup.postValue(group)
-                val result = dao.getGoods(group!!.id)
+                var result = dao.getGoods(group!!.id).map {
+                    InventoryPositionModel(UUID.randomUUID(), it.id, it.groupId, it.goodId, it.goodName,it.price, it.count )
+                }
                 positions.postValue(result)
             }
         }
@@ -105,7 +107,9 @@ class InventoryEditorViewModel @Inject constructor(
         if(selectGroup.value==group) return
         selectGroup.value = group
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
-            val result = dao.getGoods(group.id)
+            val result = dao.getGoods(group.id).map {
+                InventoryPositionModel(UUID.randomUUID(), it.id, it.groupId, it.goodId, it.goodName,it.price, it.count )
+            }
             positions.postValue(result)
         }
     }
@@ -135,7 +139,7 @@ class InventoryEditorViewModel @Inject constructor(
 
         positions.postValue(
             positions.value?.plus(
-                InventoryPositionModel(0, groupId, good.id, good.name, good.price, count)
+                InventoryPositionModel( UUID.randomUUID(), 0, groupId, good.id, good.name, good.price, count)
             )
         )
         onChangeSum(BigDecimal(0), count, good.price)
@@ -184,7 +188,7 @@ class InventoryEditorViewModel @Inject constructor(
             positions.postValue(list)
             */
             val list = goods.map {
-                InventoryPositionModel(0, selectGroup.value!!.id, it.id, it.name, it.price, BigDecimal(0) )
+                InventoryPositionModel(  UUID.randomUUID(),0, selectGroup.value!!.id, it.id, it.name, it.price, BigDecimal(0) )
             }.toMutableList()
             list.addAll(positions.value ?: listOf())
             positions.postValue(list)
@@ -221,13 +225,18 @@ class InventoryEditorViewModel @Inject constructor(
         dao.updateGroups(groups.value!!)
     }
 
-    fun changeCountInPosition(goodId: Long, count: BigDecimal){
+    fun changeCountInPosition(uuid: UUID, goodId: Long, count: BigDecimal){
         positions.value = positions.value?.map {
-            if(it.goodId==goodId){
+            if(it.uuid==uuid){
                 onChangeSum(it.count, count, it.price)
                 it.count = count
             }
-
+            /*
+            if(it.goodId==goodId ){
+                onChangeSum(it.count, count, it.price)
+                it.count = count
+            }
+            */
             return@map it
         }
         isSaveState.value = true

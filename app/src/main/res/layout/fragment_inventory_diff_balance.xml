@@ -54,7 +54,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
                     android:hint="Наименование товара"
-                    android:inputType="text" />
+                    android:inputType="text"
+                    android:imeOptions="actionDone"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

@@ -16,7 +16,7 @@ class SynchBalance(private val shopDbName: String, private val api: BalanceApiSe
         val goods = goodDao.getGoods(shopDbName)
 
         var response = api.getBalance(0, 400)
-        var skip = 200
+        var skip = 400
         val count = response.count
         insertBalance(goods, response.items)
 

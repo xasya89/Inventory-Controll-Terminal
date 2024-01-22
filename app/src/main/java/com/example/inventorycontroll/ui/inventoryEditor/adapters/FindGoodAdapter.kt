@@ -30,7 +30,7 @@ class FindGoodAdapter() :RecyclerView.Adapter<FindGoodAdapter.ViewHolder>() {
 
         fun bind(item: FindGoodModel)= with(binding){
             findGoodName.text = item.name
-            findGoodPrice.text = item.price.toString()
+            findGoodPrice.text = item.price.toString() + "  кол-во: " + item.balance.toString()
             findGoodBtnSelect.setImageResource(if(item.isSelected) R.drawable.baseline_check_box_24 else R.drawable.baseline_check_box_outline_blank_24)
         }
     }

@@ -1,11 +1,16 @@
 package com.example.inventorycontroll.ui.inventoryEditor
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.KeyEvent
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
+import android.widget.TextView
+import android.widget.TextView.OnEditorActionListener
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,21 +19,12 @@ import com.example.inventorycontroll.databinding.FragmentInventoryDiffBalanceBin
 import com.example.inventorycontroll.ui.inventoryEditor.adapters.InventoryDiffAdapter
 import dagger.hilt.android.AndroidEntryPoint
 
-private const val ARG_PARAM1 = "param1"
 
 @AndroidEntryPoint
 class InventoryDiffBalanceFragment() : Fragment() {
-    private var inventoryId: Long? = null
     private lateinit var binding: FragmentInventoryDiffBalanceBinding
     private val vm by activityViewModels<InventoryDiffViewModel>()
     private val adapter = InventoryDiffAdapter()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            inventoryId = it.getLong(ARG_PARAM1)
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,12 +35,26 @@ class InventoryDiffBalanceFragment() : Fragment() {
         binding.inventoryDiffRecycleView.adapter = adapter
         binding.inventoryDiffRecalcBtn.setOnClickListener { vm.getDiff() }
         binding.inventoryDiffGroupSelectBtn.setOnClickListener { showPopup(it) }
+        binding.inventoryDiffGoodNameSearch.addTextChangedListener(object: TextWatcher{
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                vm.searchTextChanged(p0?.toString() ?: "")
+            }
+
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+
+            }
+
+            override fun afterTextChanged(p0: Editable?) {
+
+            }
+
+        })
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        vm.inventoryId.value = inventoryId ?: 0
+        vm.searchText.value = ""
         vm.balance.observe(viewLifecycleOwner,{
             adapter.setItems(it)
         })
@@ -78,11 +88,6 @@ class InventoryDiffBalanceFragment() : Fragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(inventoryId: Long) =
-            InventoryDiffBalanceFragment().apply {
-                arguments = Bundle().apply {
-                    putLong(ARG_PARAM1, inventoryId)
-                }
-            }
+        fun newInstance() = InventoryDiffBalanceFragment().apply {}
     }
 }

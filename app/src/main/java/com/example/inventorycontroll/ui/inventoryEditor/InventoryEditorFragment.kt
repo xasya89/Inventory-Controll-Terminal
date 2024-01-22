@@ -40,7 +40,7 @@ class InventoryEditorFragment : Fragment() {
     private val vm by activityViewModels<InventoryEditorViewModel>()
     private val shopViewModel by activityViewModels<ShopViewModel>()
     private val keyListenerViewModel by activityViewModels<KeyListenerViewModel>()
-    private val rcAdapter=PositionRecycleViewAdapter({goodId, newCount -> vm.changeCountInPosition(goodId, newCount)})
+    private val rcAdapter=PositionRecycleViewAdapter({uuid, goodId, newCount -> vm.changeCountInPosition(uuid, goodId, newCount)})
 
     private lateinit var spinnerGroups: SpinnerGroups
 

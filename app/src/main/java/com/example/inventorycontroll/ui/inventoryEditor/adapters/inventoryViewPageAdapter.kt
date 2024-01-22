@@ -12,7 +12,7 @@ class InventoryViewPageAdapter(private val inventoryId: Long, private val fragme
 
     override fun createFragment(position: Int): Fragment = when(position){
         0 -> InventoryEditorFragment()
-        1 -> InventoryDiffBalanceFragment.newInstance(inventoryId)
+        1 -> InventoryDiffBalanceFragment.newInstance()
         2 -> InventoryEditorSummaryFragment()
         else -> InventoryEditorFragment()
     }
