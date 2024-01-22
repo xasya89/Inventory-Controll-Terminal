@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.inventorycontroll.R
@@ -19,7 +20,7 @@ private const val ARG_PARAM1 = "param1"
 class InventoryDiffBalanceFragment() : Fragment() {
     private var inventoryId: Long? = null
     private lateinit var binding: FragmentInventoryDiffBalanceBinding
-    private val vm by viewModels<InventoryDiffViewModel>()
+    private val vm by activityViewModels<InventoryDiffViewModel>()
     private val adapter = InventoryDiffAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,16 +37,19 @@ class InventoryDiffBalanceFragment() : Fragment() {
         binding = FragmentInventoryDiffBalanceBinding.inflate(inflater)
         binding.inventoryDiffRecycleView.layoutManager = LinearLayoutManager(context)
         binding.inventoryDiffRecycleView.adapter = adapter
-        binding.inventoryDiffRecalcBtn.setOnClickListener { vm.getDiff(inventoryId!!) }
+        binding.inventoryDiffRecalcBtn.setOnClickListener { vm.getDiff() }
         binding.inventoryDiffGroupSelectBtn.setOnClickListener { showPopup(it) }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        vm.getDiff(inventoryId!!)
+        vm.inventoryId.value = inventoryId ?: 0
         vm.balance.observe(viewLifecycleOwner,{
             adapter.setItems(it)
+        })
+        vm.selectGoodGroup.observe(viewLifecycleOwner,{
+            binding.inventoryDiffGoodNameSearch.hint = if(it == null) "Поиск товара" else "Поиск в " + it.name
         })
         vm.isLoadingState.observe(viewLifecycleOwner,{
             binding.inventoryDiffLoadingState.visibility = if(it) View.GONE else View.VISIBLE
@@ -64,7 +68,7 @@ class InventoryDiffBalanceFragment() : Fragment() {
         popupMenu.setOnMenuItemClickListener {
             val group = vm.groups.value?.firstOrNull{ gr->gr.name==it.title.toString() }
             vm.selectGoodGroup.value = group
-            vm.getDiff(inventoryId!!)
+            vm.getDiff()
             return@setOnMenuItemClickListener true
         }
         popupMenu.setOnDismissListener {

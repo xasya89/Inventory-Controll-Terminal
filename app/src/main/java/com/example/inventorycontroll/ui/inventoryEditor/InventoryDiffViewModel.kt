@@ -29,6 +29,7 @@ class InventoryDiffViewModel @Inject constructor(
     private val invnetoryGroupingDao: InventoryGroupingDao,
     private val goodGroupsDao: GoodGroupDao
 ): ViewModel() {
+    val inventoryId = MutableLiveData<Long>(0)
     val balance = MutableLiveData<List<BalanceDiffItemModel>>(listOf())
     val isLoadingState = MutableLiveData<Boolean>(false)
     val groups = MutableLiveData<List<GoodGroup>>(listOf())
@@ -42,11 +43,11 @@ class InventoryDiffViewModel @Inject constructor(
         }
     }
 
-    fun getDiff(inventoryId: Long){
+    fun getDiff(){
         val dbName = shopService.selectShop!!.dbName
         isLoadingState.value = false
         viewModelScope.launch (getCoroutineExceptionHandler() + Dispatchers.IO){
-            val items = invnetoryGroupingDao.getCountBalanceAndInventory(inventoryId, dbName)
+            val items = invnetoryGroupingDao.getCountBalanceAndInventory(inventoryId.value!!, dbName)
                 .filter { selectGoodGroup.value==null || it.groupId==selectGoodGroup.value?.id }
             balance.postValue(items.map { BalanceDiffItemModel(
                 it.goodId,
